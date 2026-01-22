@@ -1,0 +1,18 @@
+services:
+  chat-app:
+    build: .
+    image: chat-app-img
+    container_name: chat-app-container
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      # On surcharge l'URL ici pour être certain que Docker utilise le bon chemin
+      - DATABASE_URL=file:/app/data/app.db
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    volumes:
+      # Très important : cela lie le dossier 'data' de ton Mac au dossier 'data' du conteneur.
+      # Ainsi, si tu arrêtes Docker, tes messages ne sont pas effacés !
+      - ./data:/app/data
+    restart: always
