@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prisma:studio": "prisma studio --schema=./backend/prisma/schema.prisma"
   },
   "dependencies": {
     "groq-sdk": "^0.37.0",
