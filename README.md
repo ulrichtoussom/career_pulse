@@ -44,6 +44,8 @@
 git clone [https://github.com/votre-username/career-studio.git](https://github.com/votre-username/career-studio.git)
 cd career-studio
 
+```
+
 
 # 🚀 Career Studio – Guide d'installation et de déploiement
 
@@ -57,6 +59,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=votre_cle_anonyme
 SUPABASE_SERVICE_ROLE_KEY=votre_service_role_secret
 GROQ_API_KEY=votre_groq_api_key
 
+```
 
 ### Lamcement  du code 
 
