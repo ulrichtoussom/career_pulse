@@ -1,18 +1,17 @@
 services:
-  chat-app:
+  career-studio-global:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        # Ces lignes lisent ton fichier .env.local sur ton PC 
-        # et envoient les valeurs au Dockerfile pendant la construction
+        # Ces variables servent au moment du build (Next.js)
         - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
         - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
         - GROQ_API_KEY=${GROQ_API_KEY}
-    container_name: gemini-chat-app
+    container_name: career-studio-app
     ports:
-      - "3000:3000"
+      - "3000:3000" # Un seul port pour tout le projet
     env_file:
       - .env
     environment:
