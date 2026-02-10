@@ -1,10 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 
-// On récupère les variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-// On récupère l'URL du site (définie sur Render)
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+
+// On calcule l'URL de redirection de manière dynamique
+// Si on est dans le navigateur, on prend l'URL actuelle (chaweb.onrender.com)
+// Sinon (pendant le build), on met une chaîne vide
+const getRedirectUrl = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return 'https://chaweb.onrender.com'; // Valeur de secours pour le build
+}
 
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder-url-for-build.supabase.co', 
@@ -14,9 +21,9 @@ export const supabase = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      // On force Supabase à connaître l'URL de l'application
-      flowType: 'pkce', // Recommandé pour SSR et la sécurité moderne
-      redirectTo: siteUrl // Optionnel ici, mais utile pour certains flux
+      flowType: 'pkce'
     }
   }
 )
+
+export const siteUrl = getRedirectUrl();

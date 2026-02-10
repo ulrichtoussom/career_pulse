@@ -30,14 +30,19 @@ export default function AuthPage() {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-        
+
         if (data.user) {
-          setMessage({ text: "Connexion réussie !", type: "success" });
-          setTimeout(() => {
-            window.location.href = `${siteUrl}/`; 
-          }, 1500);
-        }
+            setMessage({ text: "Connexion réussie !", type: "success" });
+            
+            setTimeout(() => {
+              // window.location.origin est LA clé. 
+              // Si tu es sur ton téléphone sur chaweb.onrender.com, 
+              // cette variable vaudra EXACTEMENT ça, et jamais localhost.
+              const currentOrigin = window.location.origin;
+              console.log(currentOrigin)
+              window.location.href = `${currentOrigin}/`; 
+            }, 1500);
+        } 
       }
     } catch (err) {
       // Traduction des erreurs courantes pour l'étudiant
