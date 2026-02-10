@@ -30,9 +30,13 @@ export default function AuthPage() {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+        
         if (data.user) {
-          setMessage({ text: "Connexion réussie ! Redirection...", type: "success" });
-          setTimeout(() => window.location.href = window.location.origin + '/' , 1500); // Petit délai pour laisser lire le message
+          setMessage({ text: "Connexion réussie !", type: "success" });
+          setTimeout(() => {
+            window.location.href = `${siteUrl}/`; 
+          }, 1500);
         }
       }
     } catch (err) {
