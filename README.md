@@ -69,6 +69,8 @@ http://localhost:3000
 
 ### 3. Architecture du projet 
 
+```bash
+
 ├── app/                  # Routes et API (Backend Next.js)
 ├── components/           # Composants UI React
 │   └── templates/        # Styles de CV (Moderne, Épuré, Créatif)
@@ -77,7 +79,9 @@ http://localhost:3000
 │   └── services/         # Logique d'appel à l'IA
 ├── public/               # Images et assets statiques
 ├── Dockerfile            # Configuration de production (Alpine)
-└── docker-compose.yml    # Orchestration Docker
+└── docker-compose.yml    # Orchestration 
+
+```
 
 ### 🌍 4.Deploiement sur render 
 
