@@ -46,14 +46,13 @@ cd career-studio
 
 ```
 
-
 # 🚀 Career Studio – Guide d'installation et de déploiement
 
 ## 📦 1. Création du fichier `.env`
 
 Créez un fichier `.env` à la racine du projet et ajoutez les variables suivantes :
 
-```env
+```bash
 NEXT_PUBLIC_SUPABASE_URL=votre_url_supabase
 NEXT_PUBLIC_SUPABASE_ANON_KEY=votre_cle_anonyme
 SUPABASE_SERVICE_ROLE_KEY=votre_service_role_secret
