@@ -32,7 +32,7 @@ export default function AuthPage() {
         
         if (data.user) {
           setMessage({ text: "Connexion réussie ! Redirection...", type: "success" });
-          setTimeout(() => router.push('/'), 1500); // Petit délai pour laisser lire le message
+          setTimeout(() => window.location.href = window.location.origin + '/' , 1500); // Petit délai pour laisser lire le message
         }
       }
     } catch (err) {
