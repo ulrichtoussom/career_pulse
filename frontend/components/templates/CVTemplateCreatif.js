@@ -36,22 +36,31 @@ export default function CVTemplateCreatif({ data }) {
               </div>
             </section>
 
+            {/* SECTION : LANGUES (SÉCURISÉE) */}
             <section className="mb-10">
                 <h3 className="text-[#a855f7] text-xs font-black uppercase tracking-[0.2em] mb-4">Langues</h3>
                 <div className="space-y-2">
-                {(data?.cv?.languages || []).map((lang, i) => (
-                    <div key={i} className="flex justify-between items-center text-[11px] font-medium text-gray-700">
-                    <span>{lang}</span>
-                    <div className="flex gap-1">
-                        {/* Petits points décoratifs pour le niveau */}
-                        {[1, 2, 3, 4, 5].map((dot) => (
-                        <div key={dot} className={`w-1.5 h-1.5 rounded-full ${dot <= 4 ? 'bg-purple-400' : 'bg-gray-200'}`}></div>
-                        ))}
-                    </div>
-                    </div>
-                ))}
+                    {(data?.cv?.languages || []).map((lang, i) => {
+                        // Sécurité : si l'IA envoie un objet {lang, level}, on prend juste le nom
+                        const languageName = typeof lang === 'object' ? (lang.lang || lang.name || lang.language) : lang;
+                        const languageLevel = typeof lang === 'object' ? lang.level : null;
+
+                        return (
+                            <div key={i} className="flex justify-between items-center text-[11px] font-medium text-gray-700">
+                                <span>
+                                    <span className="font-bold">{languageName}</span>
+                                    {languageLevel && <span className="text-gray-400 text-[9px] ml-1">({languageLevel})</span>}
+                                </span>
+                                <div className="flex gap-1">
+                                    {[1, 2, 3, 4, 5].map((dot) => (
+                                        <div key={dot} className={`w-1.5 h-1.5 rounded-full ${dot <= 4 ? 'bg-purple-400' : 'bg-gray-200'}`}></div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
-             </section>
+            </section>
 
             {/* Section Formation  */}
 
