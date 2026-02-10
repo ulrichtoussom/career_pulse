@@ -1,6 +1,7 @@
 import { getAIResponse } from '@/backend/services/aiSercive';
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
+import { extractText } from 'unpdf'; 
 
 export async function POST(req) {
     const authHeader = req.headers.get('Authorization');
@@ -16,68 +17,127 @@ export async function POST(req) {
         const { data: { user } } = await supabase.auth.getUser(token);
         if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
-        const { profile_summary, job_description, full_name } = await req.json();
-        // LE PROMPT STRATÉGIQUE
-        const systemPrompt = `
-            Tu es un expert en recrutement international et rédacteur professionnel de CV. 
-            Analyse le profil et l'offre d'emploi pour générer un dossier COMPLET et PERSUASIF.
+        const formData = await req.formData();
+        const profile_summary = formData.get('profile_summary') || "";
+        const job_description = formData.get('job_description') || "";
+        const cvFile = formData.get('cv_file');
 
-            CONSIGNES DE RÉDACTION :
-            1. RÉSUMÉ : Fais un paragraphe de 4-5 lignes captivant, utilisant des mots-clés de l'offre.
-            2. EXPÉRIENCES : Pour chaque expérience, invente ou déduis 4 à 5 puces détaillées basées sur les standards du métier (ex: KPI, outils utilisés, travail d'équipe). 
-            3. LETTRE : Rédige une lettre de motivation de 3 paragraphes (Vous, Moi, Nous) d'environ 250 mots.
-            4. CONTACT : Si le nom est fourni, invente une adresse email professionnelle (ex: prenom.nom@email.com) et un numéro de téléphone fictif pour remplir le design.
+        let extractedText = "";
+
+        // --- EXTRACTION PDF AVEC UNPDF (STABLE & SÉCURISÉE) ---
+        if (cvFile && cvFile.size > 0) {
+            console.log("Tentative d'extraction du fichier avec unpdf :", cvFile.name);
+            try {
+                const arrayBuffer = await cvFile.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer); 
+
+                const result = await extractText(uint8Array);
+                
+                // CORRECTIF : Vérification du type de retour de unpdf
+                if (typeof result === 'string') {
+                    extractedText = result;
+                } else if (result && result.text) {
+                    extractedText = result.text;
+                }
+                
+                if (extractedText) {
+                    console.log("✅ Texte extrait avec succès !");
+                }
+            } catch (pdfErr) {
+                console.error("❌ Échec de la lecture PDF :", pdfErr.message);
+                extractedText = ""; 
+            }
+        }
+
+        // --- LOGIQUE DE SÉCURITÉ (Garantir des strings pour .trim()) ---
+        const safeProfileSummary = String(profile_summary || "");
+        const safeExtractedText = String(extractedText || "");
+        const safeJobDescription = String(job_description || "");
+
+        const hasInput = safeProfileSummary.trim().length > 5 || safeExtractedText.trim().length > 5;
+        const hasJob = safeJobDescription.trim().length > 5;
+
+        // Nettoyage des espaces et sauts de ligne pour le prompt
+        const cleanExtracted = safeExtractedText.replace(/\s+/g, ' ').trim();
+
+        const fullContext = `
+            RÉSUMÉ SAISI : ${safeProfileSummary || "Aucun"}
+            TEXTE PDF : ${cleanExtracted || "Aucun"}
+        `;
+
+        const systemPrompt = `
+            Tu es un expert en recrutement international. 
+            ${(!hasInput && !hasJob) 
+                ? "L'utilisateur n'a rien fourni. Génère un dossier EXEMPLE pour Ulrich Toussom, Développeur Web Senior." 
+                : "Génère un dossier personnalisé basé sur les données fournies."}
+
+            CONSIGNES :
+            - RÉSUMÉ : 4-5 lignes percutantes.
+            - EXPERIENCES : 3-4 postes détaillés avec des puces.
+            - LETTRE : Ton professionnel, environ 250 mots.
+            - IMPORTANT : Réponds UNIQUEMENT en JSON pur, sans texte explicatif.
 
             STRUCTURE JSON STRICTE :
             {
-            "header": { "name": "Candidat"}", "title": "Titre du profil adapté à l'offre", "email": "...", "phone": "..." },
-            "cv": {
-                "summary": "Texte long et pro",
-                "experience": [{ "company": "", "role": "", "period": "", "tasks": ["Tâche détaillée 1", "Tâche détaillée 2", "Tâche détaillée 3", "Tâche détaillée 4"] }],
-                "skills": ["Compétence précise 1", "..."]
-            },
-            "letter": "Lettre longue et structurée avec formules de politesse",
-            "analysis": { "strengths": ["Analyse détaillée"], "gaps": ["Conseils de progression"] }
+                "header": { "name": "...", "title": "...", "email": "...", "phone": "...", "location": "..." },
+                "cv": {
+                    "summary": "...",
+                    "experience": [{ "company": "", "role": "", "period": "", "tasks": [] }],
+                    "education": [{ "school": "", "degree": "", "year": "", "description": "" }],
+                    "skills": [],
+                    "languages": [],
+                    "interests": []
+                },
+                "letter": "...",
+                "analysis": { "strengths": [], "gaps": [] }
             }
 
-            PROFIL CANDIDAT : ${profile_summary}
-            OFFRE D'EMPLOI : ${job_description}
-            `;
+            DONNÉES CANDIDAT : ${fullContext}
+            OFFRE : ${safeJobDescription || "Candidature libre"}
+        `;
+
+        console.log("Envoi à l'IA...");
         const aiRawResponse = await getAIResponse(systemPrompt);
         
-                // Extraction du bloc JSON
-        const jsonMatch = aiRawResponse.match(/\{[\s\S]*\}/);
-
+        // Nettoyage des balises Markdown (```json) que l'IA ajoute parfois
+        let cleanedJson = aiRawResponse.replace(/```json/g, "").replace(/```/g, "").trim();
+        
+        const jsonMatch = cleanedJson.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
-            throw new Error("L'IA n'a pas renvoyé de JSON");
+            console.error("Réponse IA sans JSON valide");
+            throw new Error("L'IA n'a pas renvoyé de format exploitable");
         }
-        let structuredData = null
-        let cleanedJson = jsonMatch[0];
+
+        let structuredData = null;
+        
 
         try {
-            // ÉTAPE CRUCIALE : On remplace les vrais retours à la ligne par des \n 
-            // pour que JSON.parse ne plante pas
-            cleanedJson = cleanedJson.replace(/\n/g, "\\n").replace(/\r/g, "\\r");
+            // La regex doit être bien fermée avec g, " " et la parenthèse
+            const finalJsonString = jsonMatch[0].replace(/[\u0000-\u001F]+/g, " ");
             
-            // Mais attention, cela peut casser les structures JSON si on ne fait pas gaffe.
-            // Une méthode plus robuste consiste à demander à l'IA de ne pas mettre de sauts de ligne
-            // OU à utiliser ce correcteur plus précis :
-            structuredData = JSON.parse(jsonMatch[0].replace(/[\u0000-\u001F]+/g, " "));
-            
-            // Si la ligne au-dessus ne suffit pas, utilise celle-ci qui est la plus "brutale" mais efficace :
-            // const structuredData = JSON.parse(jsonMatch[0].replace(/\n/g, "\\n"));
+            structuredData = JSON.parse(finalJsonString);
+
+            // 2. Sécurisation des nouvelles sections (APRES le parse)
+            if (!structuredData.cv) structuredData.cv = {};
+            if (!structuredData.cv.experience) structuredData.cv.experience = [];
+            if (!structuredData.cv.education) structuredData.cv.education = [];
+            if (!structuredData.cv.interests) structuredData.cv.interests = [];
+            if (!structuredData.cv.languages) structuredData.cv.languages = [];
+            if (!structuredData.cv.skills) structuredData.cv.skills = [];
+
+            if (!structuredData.analysis) structuredData.analysis = { strengths: [], gaps: [] };
         } catch (e) {
-            console.error("Échec du parse final. Contenu reçu :", jsonMatch[0]);
-            throw new Error("Le format généré par l'IA est corrompu");
+            console.error("Erreur parsing JSON IA :", e.message);
+            throw new Error("Données JSON corrompues");
         }
 
-        // Sauvegarde
+        // Sauvegarde Supabase
         const { data, error: dbError } = await supabase
             .from('career_profiles')
             .insert([{
                 user_id: user.id,
-                job_description,
-                user_raw_profile: profile_summary,
+                job_description: safeJobDescription || "Démo / Spontanée",
+                user_raw_profile: fullContext.substring(0, 3000),
                 structured_data: structuredData
             }])
             .select().single();
@@ -85,8 +145,9 @@ export async function POST(req) {
         if (dbError) throw dbError;
 
         return NextResponse.json(data);
+
     } catch (error) {
-        console.error("Career API Error:", error);
-        return NextResponse.json({ error: "Erreur de génération" }, { status: 500 });
+        console.error("GLOBAL API ERROR:", error.message);
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
