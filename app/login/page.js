@@ -52,7 +52,16 @@ export default function AuthPage() {
   }
 
   const handleOAuth = async (provider) => {
-    await supabase.auth.signInWithOAuth({ provider });
+    // On récupère l'URL actuelle du navigateur (Dynamique !)
+    const currentOrigin = window.location.origin;
+  
+    await supabase.auth.signInWithOAuth({ 
+      provider,
+      options: {
+        // On demande à Supabase de revenir ici après le login GitHub
+        redirectTo: `${currentOrigin}/auth/callback`
+      }
+    });
   };
 
   return (
