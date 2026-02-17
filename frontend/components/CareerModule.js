@@ -10,7 +10,8 @@ export default function CareerModule() {
     const [result, setResult] = useState(null);
     const [activeTab, setActiveTab] = useState('cv'); 
     const [selectedTemplate, setSelectedTemplate] = useState('moderne');
-    const [fileName, setFileName] = useState("");
+    const [fileName, setFileName] = useState("")
+    const [isEditingLetter, setIsEditingLetter] = useState(false);
 
     const templates = {
         moderne: CVTemplateModerne,
@@ -250,16 +251,39 @@ export default function CareerModule() {
                                 )}
                                 
                                 {activeTab === 'letter' && (
-                                    <div id="letter-preview" className="bg-white shadow-2xl p-16 w-[794px] min-h-[1120px] text-sm leading-loose">
-                                        <div className="mb-10 text-right">
-                                            <p className="font-bold text-lg">{result.header.name}</p>
-                                            <p className="text-gray-500 text-xs">{result.header.email} • {result.header.phone}</p>
-                                            <p className="text-gray-400 italic text-xs mt-1">Le {new Date().toLocaleDateString('fr-FR')}</p>
+                                    <div className="relative group">
+                                        {/* Bouton pour activer l'édition */}
+                                        <button 
+                                            onClick={() => setIsEditingLetter(!isEditingLetter)}
+                                            className="relative -top-8 right-0 bg-blue-100 text-blue-600 px-3 py-1 rounded-md text-xs font-bold hover:bg-blue-200 transition-all"
+                                        >
+                                            {isEditingLetter ? "✅ Terminer l'édition" : "✏️ Modifier la lettre"}
+                                        </button>
+                                
+                                        <div id="letter-preview" className="bg-white shadow-2xl p-16 w-[794px] min-h-[1120px] text-sm leading-loose">
+                                            <div className="mb-10 text-right">
+                                                <p className="font-bold text-lg">{result.header.name}</p>
+                                                <p className="text-gray-500 text-xs">{result.header.email} • {result.header.phone}</p>
+                                                <p className="text-gray-400 italic text-xs mt-1">Le {new Date().toLocaleDateString('fr-FR')}</p>
+                                            </div>
+                                
+                                            {isEditingLetter ? (
+                                                <textarea
+                                                    value={result.letter}
+                                                    onChange={(e) => {
+                                                        // On met à jour le contenu dans l'objet result
+                                                        setResult({ ...result, letter: e.target.value });
+                                                    }}
+                                                    className="w-full min-h-[700px] p-4 font-serif text-gray-700 text-base border-2 border-blue-200 rounded-lg focus:outline-none focus:border-blue-500 bg-blue-50/30 resize-none"
+                                                    spellCheck="false"
+                                                />
+                                            ) : (
+                                                <div className="whitespace-pre-wrap font-serif text-gray-700 text-base outline-none">
+                                                    {result.letter}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="whitespace-pre-wrap font-serif text-gray-700 text-base">
-                                            {result.letter}
-                                        </div>
-                                    </div>
+                                </div>
                                 )}
 
                                 {activeTab === 'analysis' && (
