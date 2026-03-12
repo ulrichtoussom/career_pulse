@@ -2,6 +2,9 @@ import { getAIResponse } from '@/backend/services/aiSercive';
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import { extractText } from 'unpdf'; 
+import { getCareerSystemPrompt } from '@/backend/prompts/careerPrompts';
+import { cleanAndValidateAIJson } from '@/backend/utils/jsonCleaner';
+
 
 export async function POST(req) {
     const authHeader = req.headers.get('Authorization');
@@ -26,7 +29,7 @@ export async function POST(req) {
 
         // --- EXTRACTION PDF AVEC UNPDF (STABLE & SÉCURISÉE) ---
         if (cvFile && cvFile.size > 0) {
-            console.log("Tentative d'extraction du fichier avec unpdf :", cvFile.name);
+            // console.log("Tentative d'extraction du fichier avec unpdf :", cvFile.name);
             try {
                 const arrayBuffer = await cvFile.arrayBuffer();
                 const uint8Array = new Uint8Array(arrayBuffer); 
@@ -65,70 +68,17 @@ export async function POST(req) {
             TEXTE PDF : ${cleanExtracted || "Aucun"}
         `;
 
-        const systemPrompt = `
-            Tu es un expert en recrutement international. 
-            ${(!hasInput && !hasJob) 
-                ? "L'utilisateur n'a rien fourni. Génère un dossier EXEMPLE pour Ulrich Toussom, Développeur Web Senior." 
-                : "Génère un dossier personnalisé basé sur les données fournies."}
-
-            CONSIGNES :
-            - RÉSUMÉ : 4-5 lignes percutantes.
-            - EXPERIENCES : 3-4 postes détaillés avec des puces.
-            - LETTRE : Ton professionnel, environ 250 mots.
-            - IMPORTANT : Réponds UNIQUEMENT en JSON pur, sans texte explicatif.
-
-            STRUCTURE JSON STRICTE :
-            {
-                "header": { "name": "...", "title": "...", "email": "...", "phone": "...", "location": "..." },
-                "cv": {
-                    "summary": "...",
-                    "experience": [{ "company": "", "role": "", "period": "", "tasks": [] }],
-                    "education": [{ "school": "", "degree": "", "year": "", "description": "" }],
-                    "skills": [],
-                    "languages": [],
-                    "interests": []
-                },
-                "letter": "...",
-                "analysis": { "strengths": [], "gaps": [] }
-            }
-
-            DONNÉES CANDIDAT : ${fullContext}
-            OFFRE : ${safeJobDescription || "Candidature libre"}
-        `;
+        // isolation du prompt Engeniring e
+        const systemPrompt = getCareerSystemPrompt(hasInput, hasJob, fullContext, safeJobDescription);
 
         console.log("Envoi à l'IA...");
         const aiRawResponse = await getAIResponse(systemPrompt);
         
-        // Nettoyage des balises Markdown (```json) que l'IA ajoute parfois
-        let cleanedJson = aiRawResponse.replace(/```json/g, "").replace(/```/g, "").trim();
-        
-        const jsonMatch = cleanedJson.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            console.error("Réponse IA sans JSON valide");
-            throw new Error("L'IA n'a pas renvoyé de format exploitable");
-        }
+       // UTILISATION DE L'UTILITAIRE POUR NETOYER LA RESULTAT ENVOYER PAS L'IA
+        const structuredData = cleanAndValidateAIJson(aiRawResponse);
 
-        let structuredData = null;
-        
-
-        try {
-            // La regex doit être bien fermée avec g, " " et la parenthèse
-            const finalJsonString = jsonMatch[0].replace(/[\u0000-\u001F]+/g, " ");
-            
-            structuredData = JSON.parse(finalJsonString);
-
-            // 2. Sécurisation des nouvelles sections (APRES le parse)
-            if (!structuredData.cv) structuredData.cv = {};
-            if (!structuredData.cv.experience) structuredData.cv.experience = [];
-            if (!structuredData.cv.education) structuredData.cv.education = [];
-            if (!structuredData.cv.interests) structuredData.cv.interests = [];
-            if (!structuredData.cv.languages) structuredData.cv.languages = [];
-            if (!structuredData.cv.skills) structuredData.cv.skills = [];
-
-            if (!structuredData.analysis) structuredData.analysis = { strengths: [], gaps: [] };
-        } catch (e) {
-            console.error("Erreur parsing JSON IA :", e.message);
-            throw new Error("Données JSON corrompues");
+        if (!structuredData) {
+            throw new Error("L'IA a renvoyé un format invalide après 3 tentatives de nettoyage.");
         }
 
         // Sauvegarde Supabase

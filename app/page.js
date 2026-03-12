@@ -6,6 +6,7 @@ import ChatInput from '@/frontend/components/ChatInput';
 import Sidebar from '@/frontend/components/Sidebar';
 import CareerModule from '@/frontend/components/CareerModule'; // Assure-toi de créer ce fichier
 import { useChat } from '@/frontend/hooks/useChat';
+import { getCareerSystemPrompt } from '@/backend/prompts/careerPrompts';
 
 export default function Home() {
   const [user, setUser] = useState(null);
