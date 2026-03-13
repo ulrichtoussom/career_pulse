@@ -72,7 +72,14 @@ export async function POST(req) {
         const systemPrompt = getCareerSystemPrompt(hasInput, hasJob, fullContext, safeJobDescription);
 
         console.log("Envoi à l'IA...");
-        const aiRawResponse = await getAIResponse(systemPrompt);
+        let aiRawResponse = ""
+
+        aiRawResponse = await getAIResponse("Génère le dossier complet en suivant strictement le format JSON.", systemPrompt);
+
+        if(!aiRawResponse){
+            throw new Error("L'IA a renvoyé une réponse vide");
+        }
+       
         
        // UTILISATION DE L'UTILITAIRE POUR NETOYER LA RESULTAT ENVOYER PAS L'IA
         const structuredData = cleanAndValidateAIJson(aiRawResponse);
@@ -98,6 +105,10 @@ export async function POST(req) {
 
     } catch (error) {
         console.error("GLOBAL API ERROR:", error.message);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        // return NextResponse.json({ error: error.message }, { status: 500 });
+        return new Response(JSON.stringify({ error: "Erreur lors de la génération" }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 }

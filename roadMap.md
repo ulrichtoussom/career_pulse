@@ -43,4 +43,4 @@ Career Studio est une application SaaS de gestion de carrière intelligente. Ell
 - [ ] **Historique :** Liste des CV et lettres précédemment générés.
 
 ---
-*Dernière mise à jour : Mars 2026*
+*Dernière mise à jour : Mars 2026

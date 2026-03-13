@@ -2,31 +2,53 @@
 
 export const cleanAndValidateAIJson = (rawResponse) => {
     try {
-        // 1. Nettoyage des balises Markdown (```json)
+        // 1. Nettoyage des balises Markdown
         let cleanedJson = rawResponse.replace(/```json/g, "").replace(/```/g, "").trim();
         
-        // 2. Extraction du bloc JSON avec la Regex
+        // 2. Extraction du bloc JSON
         const jsonMatch = cleanedJson.match(/\{[\s\S]*\}/);
         if (!jsonMatch) return null;
 
-        // 3. Suppression des caractères de contrôle (ton correctif sur les \u0000-\u001F)
         const finalJsonString = jsonMatch[0].replace(/[\u0000-\u001F]+/g, " ");
-        
-        const structuredData = JSON.parse(finalJsonString);
+        const parsed = JSON.parse(finalJsonString);
 
-        // 4. Sécurisation selon le nouveau format JSON Resume
+        // 3. MAPPING INTELLIGENT (Pour éviter les sections vides)
+        // Si l'IA utilise "experience" au lieu de "work", on redresse.
+        const work = parsed.work || parsed.experience || (parsed.cv && parsed.cv.experience) || [];
+        const education = parsed.education || (parsed.cv && parsed.cv.education) || [];
+        const skills = parsed.skills || (parsed.cv && parsed.cv.skills) || [];
+        const languages = parsed.languages || (parsed.cv && parsed.cv.languages) || [];
+        const interests = parsed.interests || (parsed.cv && parsed.cv.interests) || [];
+
+        // 4. Reconstruction d'un objet propre et robuste
         return {
-            basics: structuredData.basics || {},
-            work: structuredData.work || [],
-            education: structuredData.education || [],
-            skills: structuredData.skills || [],
-            languages: structuredData.languages || [],
-            interests: structuredData.interests || [],
-            cover_letter: structuredData.cover_letter || structuredData.letter || "",
-            analysis: structuredData.analysis || { strengths: [], gaps: [] }
+            basics: {
+                name: parsed.basics?.name || "Candidat",
+                label: parsed.basics?.label || "Expert Logiciel",
+                email: parsed.basics?.email || "non-renseigne@email.com",
+                phone: parsed.basics?.phone || "",
+                summary: parsed.basics?.summary || parsed.summary || "Résumé en attente...",
+                location: {
+                    city: parsed.basics?.location?.city || "France",
+                    address: parsed.basics?.location?.address || ""
+                }
+            },
+            work: work.map(w => ({
+                name: w.name || w.company || "Entreprise",
+                position: w.position || w.role || "Poste",
+                startDate: w.startDate || w.period || "",
+                endDate: w.endDate || "",
+                highlights: w.highlights || w.tasks || []
+            })),
+            education: education,
+            skills: skills,
+            languages: languages,
+            interests: interests,
+            cover_letter: parsed.cover_letter || parsed.letter || "Lettre en cours...",
+            analysis: parsed.analysis || { strengths: [], gaps: [] }
         };
     } catch (e) {
-        console.error("Erreur parsing JSON IA :", e.message);
+        console.error("CRITICAL JSON ERROR:", e.message);
         return null;
     }
 };
