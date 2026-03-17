@@ -1,13 +1,15 @@
-"use client";
+'use client'
+
 import { useEffect, useState } from 'react';
-import { supabase } from '@/backend/lib/supabase';
+import { supabase } from '@/frontend/lib/supabaseClient'
 import ChatList from '@/frontend/components/ChatList';
 import ChatInput from '@/frontend/components/ChatInput';
 import Sidebar from '@/frontend/components/Sidebar';
 import CareerModule from '@/frontend/components/CareerModule'; // Assure-toi de créer ce fichier
 import { useChat } from '@/frontend/hooks/useChat';
 
-export default function Home() {
+export default  function Home() {
+
   const [user, setUser] = useState(null);
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);

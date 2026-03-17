@@ -1,6 +1,6 @@
 // frontend/components/Sidebar.js
 import { useEffect, useState } from 'react';
-import { supabase } from '@/backend/lib/supabase';
+import { supabase } from '@/frontend/lib/supabaseClient'
 
 export default function Sidebar({ onSelectChat, currentChatId, setView, currentView }) {
   const [conversations, setConversations] = useState([]);

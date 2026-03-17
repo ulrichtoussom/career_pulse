@@ -1,4 +1,5 @@
 // components/career/CareerPreview.js
+import { useState } from 'react';
 
 export default function CareerPreview({ 
     result, 
@@ -11,6 +12,49 @@ export default function CareerPreview({
     downloadPDF,
     downloadLetterPDF 
 }) {
+
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSave = async () => {
+        if (!result.id) {
+            alert("Impossible de sauvegarder : ID du dossier manquant.");
+            return;
+        }
+        setIsSaving(true);
+        try {
+            const response = await fetch('/api/career/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: result.id,
+                    structured_data: result
+                })
+            });
+
+            if (response.ok) {
+                alert("✅ Modifications enregistrées avec succès !");
+            } else {
+                throw new Error("Erreur serveur");
+            }
+        } catch (err) {
+            alert("Erreur lors de la sauvegarde");
+            console.error('Erreur de sauvegarde ', err);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Mise à jour des champs basics (ville, entreprise, label)
+    const updateBasics = (field, value) => {
+        setResult({
+            ...result,
+            basics: { 
+                ...result.basics, 
+                [field]: value 
+            }
+        });
+    };
+
     if (!result) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-400 bg-gray-200">
@@ -38,81 +82,102 @@ export default function CareerPreview({
                     ))}
                 </div>
 
-                {/* BOUTON TÉLÉCHARGER */}
-                {(activeTab === 'cv' || activeTab === 'letter') && (
+                <div className="flex gap-3">
+                    {/* BOUTON ENREGISTRER (Global) */}
                     <button 
-                        onClick={activeTab === 'cv' ? downloadPDF : downloadLetterPDF}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95"
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all disabled:opacity-50"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                        {activeTab === 'cv' ? 'Télécharger CV (PDF)' : 'Télécharger Lettre (PDF)'}
+                        {isSaving ? "Chargement..." : "💾 Enregistrer"}
                     </button>
-                )}
+
+                    {/* BOUTON TÉLÉCHARGER */}
+                    {(activeTab === 'cv' || activeTab === 'letter') && (
+                        <button 
+                            onClick={activeTab === 'cv' ? downloadPDF : downloadLetterPDF}
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                            PDF
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* ZONE DE RENDU */}
             <div className="flex-1 overflow-auto p-8 flex justify-center bg-gray-200 shadow-inner">
                 <div className="scale-90 origin-top transition-all duration-500">
                     
-                    {/* ONGLET CV */}
                     {activeTab === 'cv' && (
                         <div id="cv-preview" className="bg-white shadow-2xl">
                             <SelectedCV data={result} />
                         </div>
                     )}
                     
-                    {/* ONGLET LETTRE */}
                     {activeTab === 'letter' && (
                         <div className="relative group">
                             <button 
                                 onClick={() => setIsEditingLetter(!isEditingLetter)}
-                                className="absolute -top-10 right-4 bg-blue-100 text-blue-600 px-3 py-1 rounded-md text-xs font-bold hover:bg-blue-200 transition-all z-20"
+                                className="absolute -top-10 right-4 bg-blue-100 text-blue-600 px-3 py-1 rounded-md text-xs font-bold hover:bg-blue-200 transition-all z-20 shadow-sm"
                             >
-                                {isEditingLetter ? "✅ Voir le rendu final" : "✏️ Modifier le texte"}
+                                {isEditingLetter ? "👁️ Voir le rendu final" : "✏️ Modifier tout l'en-tête et texte"}
                             </button>
                     
                             <div id="letter-preview" className="bg-white shadow-2xl w-[794px] min-h-[1120px]">
                                 {isEditingLetter ? (
-                                    <div className="p-16">
-                                        <textarea
-                                            value={result.cover_letter || result.letter || ""}
-                                            onChange={(e) => setResult({ ...result, cover_letter: e.target.value })}
-                                            className="w-full min-h-[800px] p-6 font-mono text-sm text-gray-700 border-2 border-blue-100 rounded-xl focus:outline-none focus:border-blue-400 bg-blue-50/20 resize-none shadow-inner"
-                                            placeholder="Rédigez votre lettre ici..."
-                                        />
+                                    /* MODE ÉDITION DÉTAILLÉ */
+                                    <div className="p-16 space-y-8 text-left">
+                                        <div className="grid grid-cols-2 gap-10">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black text-blue-400 uppercase">Ma Ville</label>
+                                                <input 
+                                                    className="w-full border-b-2 border-blue-50 focus:border-blue-400 outline-none p-1 text-sm"
+                                                    value={result.basics?.location?.city || ""}
+                                                    onChange={(e) => updateBasics('location', { ...result.basics.location, city: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-3 text-right">
+                                                <label className="text-[10px] font-black text-blue-400 uppercase text-right block">Société Visée</label>
+                                                <input 
+                                                    className="w-full border-b-2 border-blue-50 focus:border-blue-400 outline-none p-1 text-sm text-right font-bold"
+                                                    value={result.basics?.target_company || ""}
+                                                    onChange={(e) => updateBasics('target_company', e.target.value)}
+                                                    placeholder="Nom de l'entreprise"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-blue-400 uppercase">Poste (Objet)</label>
+                                            <input 
+                                                className="w-full border-b-2 border-blue-50 focus:border-blue-400 outline-none p-1 text-sm font-bold"
+                                                value={result.basics?.label || ""}
+                                                onChange={(e) => updateBasics('label', e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black text-blue-400 uppercase">Corps de la lettre</label>
+                                            <textarea
+                                                value={result.cover_letter || result.letter || ""}
+                                                onChange={(e) => setResult({ ...result, cover_letter: e.target.value })}
+                                                className="w-full min-h-[600px] p-6 font-mono text-sm text-gray-700 border-2 border-blue-100 rounded-xl focus:outline-none focus:border-blue-400 bg-blue-50/20 resize-none shadow-inner"
+                                            />
+                                        </div>
                                     </div>
                                 ) : (
-                                    /* ON APPELLE LE COMPOSANT STYLISÉ ICI */
                                     <LetterContent data={result} />
                                 )}
                             </div>
                         </div>
                     )}
 
-                    {/* ONGLET ANALYSE */}
                     {activeTab === 'analysis' && (
                         <div className="bg-white shadow-2xl p-10 w-[794px] rounded-xl">
-                            <h2 className="text-xl font-bold text-purple-600 mb-6 border-b pb-2">Analyse Stratégique</h2>
-                            <div className="grid grid-cols-2 gap-8 text-left">
-                                <div className="bg-green-50 p-6 rounded-2xl">
-                                    <h4 className="font-bold text-green-700 mb-4 flex items-center gap-2 text-base">✅ Points Forts</h4>
-                                    <ul className="space-y-3 text-sm text-green-800 italic">
-                                        {(result.analysis?.strengths || []).map((s, i) => (
-                                            <li key={i}>• {s}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                <div className="bg-red-50 p-6 rounded-2xl">
-                                    <h4 className="font-bold text-red-700 mb-4 flex items-center gap-2 text-base">⚠️ Points à surveiller</h4>
-                                    <ul className="space-y-3 text-sm text-red-800 italic">
-                                        {(result.analysis?.gaps || []).map((g, i) => (
-                                            <li key={i}>• {g}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </div>
+                            {/* ... garde ton code d'analyse actuel ... */}
                         </div>
                     )}
                 </div>
@@ -120,6 +185,8 @@ export default function CareerPreview({
         </div>
     );
 }
+
+// ... garde ton composant LetterContent actuel en dessous ...
 
 // SOUS-COMPOSANT POUR LE RENDU VISUEL "COURRIER"
 function LetterContent({ data }) {

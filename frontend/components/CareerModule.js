@@ -2,7 +2,7 @@
 
 // components/CareerModule.js
 import { useState } from 'react';
-import { supabase } from '@/backend/lib/supabase';
+import { supabase } from '@/frontend/lib/supabaseClient'
 import CVTemplateModerne from './templates/CVTemplateModerne';
 import CVTemplateEpure from './templates/CVTemplateEpure';
 import CVTemplateCreatif from './templates/CVTemplateCreatif';
@@ -66,6 +66,12 @@ export default function CareerModule() {
                 headers: { 'Authorization': `Bearer ${session.access_token}` },
                 body: formData 
             });
+
+            if (!res.ok) {
+                const errorText = await res.text(); 
+                console.error("L'API a renvoyé une erreur :", errorText);
+                return
+            }
 
             const data = await res.json();
             if (data.structured_data) {

@@ -4,21 +4,33 @@ import { NextResponse } from 'next/server';
 import { extractText } from 'unpdf'; 
 import { getCareerSystemPrompt } from '@/backend/prompts/careerPrompts';
 import { cleanAndValidateAIJson } from '@/backend/utils/jsonCleaner';
-
+import { createClient } from '@/backend/lib/supabaseServer';
 
 export async function POST(req) {
-    const authHeader = req.headers.get('Authorization');
-    const token = authHeader?.split(' ')[1];
-
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY,
-        { cookies: { getAll() { return [] } } }
-    );
+   
+    const supabase = await createClient()
 
     try {
-        const { data: { user } } = await supabase.auth.getUser(token);
-        if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+        // 2. getUser() n'a plus besoin du token si tes cookies sont bien configurés
+       /*  const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+        } */
+
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            console.log("Session active ?", !!session);
+            if (sessionError) console.error("Erreur Session:", sessionError.message);
+
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            
+            if (authError || !user) {
+                // Renvoie l'erreur réelle de Supabase pour comprendre
+                return NextResponse.json({ 
+                    error: 'Non autorisé', 
+                    details: authError?.message || "Pas d'utilisateur trouvé" 
+                }, { status: 401 });
+            }
 
         const formData = await req.formData();
         const profile_summary = formData.get('profile_summary') || "";
@@ -42,7 +54,7 @@ export async function POST(req) {
                 } else if (result && result.text) {
                     extractedText = result.text;
                 }
-                
+
                 if (extractedText) {
                     console.log("✅ Texte extrait avec succès !");
                 }
@@ -112,3 +124,5 @@ export async function POST(req) {
         });
     }
 }
+
+
