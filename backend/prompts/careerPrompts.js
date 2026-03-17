@@ -9,7 +9,10 @@ Ton objectif est de transformer des données brutes en un dossier de candidature
 1. RÉSUMÉ (basics.summary) : Ne commence jamais par "Développeur avec...". Utilise une phrase d'accroche percutante axée sur la valeur ajoutée.
 2. EXPÉRIENCES (work) : 
    - Utilise la méthode STAR. Inclus des métriques réalistes (ex: "+25% de performance").
-3. LETTRE DE MOTIVATION (cover_letter) : 
+3. FORMATION (education) : Extraire impérativement tous les diplômes, certifications et parcours académiques mentionnés.
+4. PROJETS (projects) : Extraire les projets personnels, open-source ou académiques significatifs. 
+   Décrire l'impact technique et les technos utilisées. 
+5. LETTRE DE MOTIVATION (cover_letter) : 
    - DOIT faire au moins 400 mots.
    - **CONTRAINTE DE FORMAT :** Ne rédige QUE le corps de la lettre. 
    - **INTERDIT :** N'inclus PAS tes coordonnées, l'adresse du destinataire, la date ou l'objet. Mon système s'en occupe automatiquement.
@@ -40,6 +43,21 @@ Chaque paragraphe doit être dense (minimum 6-8 lignes) :
     "startDate": "...", 
     "endDate": "...", 
     "highlights": ["..."] 
+  }],
+  "education": [{
+    "institution": "Nom de l'école/université",
+    "area": "Domaine d'étude (ex: Informatique)",
+    "studyType": "Type de diplôme (ex: Master)",
+    "startDate": "Date de début",
+    "endDate": "Date d'obtention",
+    "score": ""
+  }],
+  "projects": [{
+    "name": "Nom du projet",
+    "description": "Résumé court de l'objectif",
+    "highlights": ["Techno utilisée", "Fonctionnalité clé développée"],
+    "keywords": ["React", "Docker", etc.],
+    "url": "Lien éventuel"
   }],
   "skills": [{ "name": "...", "keywords": [] }],
   "languages": [{ "language": "...", "fluency": "..." }],

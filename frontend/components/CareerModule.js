@@ -1,5 +1,3 @@
-// Fichier Principal Netoyer 
-
 // components/CareerModule.js
 import { useState } from 'react';
 import { supabase } from '@/frontend/lib/supabaseClient'
@@ -10,8 +8,21 @@ import CVTemplateCreatif from './templates/CVTemplateCreatif';
 // Imports des sous-composants
 import CareerForm from './career/CareerForm';
 import CareerPreview from './career/CareerPreview';
-import CareerHistory from './career/CareerHistory'; // On ajoute l'import
+import CareerHistory from './career/CareerHistory';
+import AppearanceSettings from './career/AppearanceSettings'; // Importation du nouveau composant
 
+export const adjustBrightness = (hex, amt) => {
+    hex = hex.replace(/^#/, '');
+    if (hex.length === 3) hex = hex.split('').map(s => s + s).join('');
+    let [r, g, b] = hex.match(/.{2}/g).map(x => parseInt(x, 16));
+    
+    r = Math.max(0, Math.min(255, r + amt));
+    g = Math.max(0, Math.min(255, g + amt));
+    b = Math.max(0, Math.min(255, b + amt));
+    
+    const fill = (n) => n.toString(16).padStart(2, '0');
+    return `#${fill(r)}${fill(g)}${fill(b)}`;
+  };
 
 export default function CareerModule() {
     
@@ -21,11 +32,28 @@ export default function CareerModule() {
     const [selectedTemplate, setSelectedTemplate] = useState('moderne');
     const [fileName, setFileName] = useState("");
     const [isEditingLetter, setIsEditingLetter] = useState(false);
+    const [showDesignPanel, setShowDesignPanel] = useState(true);
+
+    // État du Thème
+    const [theme, setTheme] = useState({
+        primaryColor: '#2563eb',
+        secondaryColor: '#6366f1',
+        fontFamily: 'font-sans',
+        spacing: 'normal',
+        borderRadius: '8px'
+    });
 
     const templates = {
         moderne: CVTemplateModerne,
         epure: CVTemplateEpure,
         creatif: CVTemplateCreatif
+    };
+
+    // Mapping pour transformer "moderne" en "Moderne" pour le sélecteur
+    const templateDisplayNames = {
+        moderne: 'Moderne',
+        epure: 'Épure',
+        creatif: 'Créatif'
     };
 
     const SelectedCV = templates[selectedTemplate];
@@ -49,7 +77,8 @@ export default function CareerModule() {
         document.body.appendChild(iframe);
         const doc = iframe.contentWindow.document;
         doc.open();
-        doc.write(`<html><head><title>CV</title><script src="https://cdn.tailwindcss.com"></script><style>body { background: white; margin: 0; padding: 0; } #cv-preview { width: 210mm; min-height: 297mm; margin: 0 auto; } @page { size: A4; margin: 0; } @media print { body { -webkit-print-color-adjust: exact; } }</style></head><body><div id="cv-preview">${content}</div><script>window.onload = () => { setTimeout(() => { window.print(); window.frameElement.remove(); }, 500); };</script></body></html>`);
+        // Injection du thème dans le print
+        doc.write(`<html><head><title>CV</title><script src="https://cdn.tailwindcss.com"></script><style>body { background: white; margin: 0; padding: 0; } #cv-preview { width: 210mm; min-height: 297mm; margin: 0 auto; } @page { size: A4; margin: 0; } @media print { body { -webkit-print-color-adjust: exact; } }</style></head><body><div id="cv-preview" class="${theme.fontFamily}">${content}</div><script>window.onload = () => { setTimeout(() => { window.print(); window.frameElement.remove(); }, 500); };</script></body></html>`);
         doc.close();
     };
 
@@ -80,6 +109,8 @@ export default function CareerModule() {
                     ...raw,
                     basics: raw.basics || {},
                     work: raw.work || [],
+                    education: raw.education || [], // <-- Vérifie que cette ligne existe bien
+                    projects: raw.projects,
                     analysis: raw.analysis || { strengths: [], gaps: [] }
                 };
                 setResult(safeData);
@@ -96,15 +127,12 @@ export default function CareerModule() {
             <div className="flex flex-1 overflow-hidden">
                 
                 {/* COLONNE GAUCHE (Formulaire + Historique) */}
-                <div className="w-full md:w-[350px] bg-white border-r flex flex-col overflow-hidden">
-                    
-                    {/* On place l'historique en haut */}
+                <div className="w-full md:w-[350px] bg-white border-r flex flex-col overflow-hidden shadow-sm z-10">
                     <CareerHistory onSelect={(data) => {
                         setResult(data);
-                        setActiveTab('cv'); // On bascule sur le CV par défaut à l'ouverture
+                        setActiveTab('cv');
                     }} />
 
-                    {/* Le formulaire prend le reste de la place avec scroll */}
                     <div className="flex-1 overflow-y-auto">
                         <CareerForm 
                             generate={generate}
@@ -118,18 +146,60 @@ export default function CareerModule() {
                     </div>
                 </div>
 
-                {/* ZONE DE TRAVAIL (Droite) */}
-                <CareerPreview 
-                    result={result}
-                    setResult={setResult}
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                    SelectedCV={SelectedCV}
-                    isEditingLetter={isEditingLetter}
-                    setIsEditingLetter={setIsEditingLetter}
-                    downloadPDF={downloadPDF}
-                    downloadLetterPDF={downloadLetterPDF}
-                />
+                {/* ZONE DE TRAVAIL CENTRALE (Aperçu) */}
+                <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
+                    <CareerPreview 
+                        result={result}
+                        setResult={setResult}
+                        activeTab={activeTab}
+                        setActiveTab={setActiveTab}
+                        SelectedCV={SelectedCV}
+                        isEditingLetter={isEditingLetter}
+                        setIsEditingLetter={setIsEditingLetter}
+                        downloadPDF={downloadPDF}
+                        downloadLetterPDF={downloadLetterPDF}
+                        theme={theme}
+                        setTheme={setTheme}
+                    />
+                </div>
+
+                {/* BARRE LATÉRALE DROITE (Réglages de style) */}
+                {result && activeTab === 'cv' && (
+
+                    <div className="relative flex">
+                        {/* BOUTON D'ONGLET POUR OUVRIR/FERMER */}
+                        <button 
+                            onClick={() => setShowDesignPanel(!showDesignPanel)}
+                            className= {`absolute -left-10 top-1/2 -translate-y-1/2 border border-r-0 p-2 rounded-l-xl shadow-md hover:text-blue-600 transition-all z-20 ${showDesignPanel ? 'bg-blue-500' : 'bg-emerald-500'} `}
+                            title={showDesignPanel ? "Fermer le menu" : "Ouvrir le menu"}
+                        >
+                            {showDesignPanel ? '→' : '←'} 
+                        </button>
+
+                        {/* CONTENU DU PANNEAU AVEC TRANSITION */}
+                        <div className={`bg-white border-l h-full transition-all duration-300 ease-in-out overflow-hidden ${
+                            showDesignPanel ? 'w-72 p-4 opacity-100' : 'w-0 p-0 opacity-0 border-none'
+                        }`}>
+                            <div className="w-64"> {/* Container fixe pour éviter que le contenu ne saute pendant le slide */}
+                                <AppearanceSettings 
+                                    theme={theme} 
+                                    setTheme={setTheme}
+                                    currentTemplate={templateDisplayNames[selectedTemplate]}
+                                    setTemplate={(name) => setSelectedTemplate(name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""))}
+                                />
+                                
+                                <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                    <button 
+                                        onClick={downloadPDF}
+                                        className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm"
+                                    >
+                                        Exporter en PDF
+                                    </button>
+                                </div>
+                            </div>
+                        </div>  
+                    </div>
+                )}
             </div>
         </div>
     );

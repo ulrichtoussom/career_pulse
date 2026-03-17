@@ -1,142 +1,122 @@
-// frontend/components/templates/CVTemplateCreatif.js
+export default function CVTemplateCreatif({ data, theme = {} }) {
+  const {
+    primaryColor = "#6366f1", // Indigo
+    secondaryColor = "#a855f7", // Purple
+    fontFamily = "font-sans"
+  } = theme;
 
-export default function CVTemplateCreatif({ data }) {
-  // Sécurité de base si data est totalement absent
-  if (!data) return <div className="p-10 text-center text-gray-500">Chargement des données...</div>;
+  if (!data) return <div className="p-10 text-center text-gray-500">Chargement...</div>;
 
-  // Mapping JSON Resume
   const basics = data.basics || {};
   const work = data.work || [];
   const education = data.education || [];
+  const projects = data.projects || [];
   const skills = data.skills || [];
   const languages = data.languages || [];
-  const interests = data.interests || [];
 
   return (
-    <div className="bg-white w-[794px] min-h-[1120px] flex flex-col shadow-2xl overflow-hidden font-sans" id="cv-preview">
-      {/* HEADER AVEC DESIGN GÉOMÉTRIQUE */}
-      <header className="relative bg-gradient-to-r from-[#6366f1] to-[#a855f7] p-12 text-white overflow-hidden">
-        {/* Forme décorative en arrière-plan */}
+    <div className={`bg-white w-[794px] min-h-[1120px] flex flex-col shadow-2xl overflow-hidden ${fontFamily}`} id="cv-preview">
+      
+      {/* HEADER AVEC GRADIENT DYNAMIQUE */}
+      <header className="relative p-12 text-white overflow-hidden" 
+              style={{ background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})` }}>
         <div className="absolute top-[-50px] right-[-50px] w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-        
         <div className="relative z-10">
           <h1 className="text-5xl font-black tracking-tighter mb-2 uppercase italic">
-            {basics.name || "Nom du candidat"}
+            {basics.name || "Nom"}
           </h1>
-          <div className="inline-block bg-white text-[#6366f1] px-4 py-1 rounded-full text-sm font-bold uppercase tracking-widest shadow-lg">
+          <div className="inline-block bg-white px-4 py-1 rounded-full text-sm font-bold uppercase tracking-widest shadow-lg"
+               style={{ color: primaryColor }}>
             {basics.label || "Poste visé"}
+          </div>
+          <div className="mt-4 flex gap-4 text-[10px] font-bold uppercase tracking-widest opacity-90">
+             <span>{basics.email}</span>
+             <span>{basics.phone}</span>
+             <span>{basics.location?.city}</span>
           </div>
         </div>
       </header>
 
       <div className="flex flex-1">
-        {/* COLONNE GAUCHE - COMPÉTENCES & INFOS */}
-        <aside className="w-1/3 bg-gray-50 p-10 border-r border-gray-100">
-          <section className="mb-10">
-            <h3 className="text-[#a855f7] text-xs font-black uppercase tracking-[0.2em] mb-6">Expertise</h3>
+        {/* COLONNE GAUCHE (ASIDE) */}
+        <aside className="w-1/3 bg-gray-50 p-10 border-r border-gray-100 flex flex-col gap-10">
+          
+          {/* EXPERTISE */}
+          <section>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-6" style={{ color: secondaryColor }}>Expertise</h3>
             <div className="flex flex-wrap gap-2">
               {skills.map((skill, i) => (
-                <span key={i} className="bg-white border border-purple-100 text-purple-700 px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm">
+                <span key={i} className="bg-white border px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition-transform hover:scale-105"
+                      style={{ borderColor: `${primaryColor}20`, color: primaryColor }}>
                   {typeof skill === 'object' ? skill.name : skill}
                 </span>
               ))}
             </div>
           </section>
 
-          {/* SECTION : LANGUES */}
-          <section className="mb-10">
-              <h3 className="text-[#a855f7] text-xs font-black uppercase tracking-[0.2em] mb-4">Langues</h3>
-              <div className="space-y-2">
-                  {languages.map((lang, i) => (
-                      <div key={i} className="flex justify-between items-center text-[11px] font-medium text-gray-700">
-                          <span>
-                              <span className="font-bold">{lang.language || lang.name || lang}</span>
-                              {lang.fluency && <span className="text-gray-400 text-[9px] ml-1">({lang.fluency})</span>}
-                          </span>
-                          <div className="flex gap-1">
-                              {[1, 2, 3, 4, 5].map((dot) => (
-                                  <div key={dot} className={`w-1.5 h-1.5 rounded-full ${dot <= 4 ? 'bg-[#6366f1]' : 'bg-gray-200'}`}></div>
-                              ))}
-                          </div>
-                      </div>
-                  ))}
+          {/* FORMATION (AJOUTÉ) */}
+          {education.length > 0 && (
+            <section>
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-6" style={{ color: secondaryColor }}>Formation</h3>
+              <div className="space-y-6">
+                {education.map((edu, i) => (
+                  <div key={i} className="relative pl-4 border-l-2" style={{ borderColor: `${primaryColor}30` }}>
+                    <p className="text-[11px] font-black text-gray-800 uppercase leading-tight">{edu.studyType}</p>
+                    <p className="text-[10px] font-bold opacity-70 mb-1" style={{ color: primaryColor }}>{edu.area}</p>
+                    <p className="text-[9px] font-medium text-gray-400 uppercase tracking-tighter">{edu.institution} • {edu.endDate}</p>
+                  </div>
+                ))}
               </div>
-          </section>
+            </section>
+          )}
 
-          {/* Section Formation  */}
-          <section className="mb-10">
-              <h3 className="text-[#a855f7] text-xs font-black uppercase tracking-[0.2em] mb-4">Formation</h3>
-              <div className="space-y-4">
-                  {education.map((edu, i) => (
-                      <div key={i} className="group">
-                          <p className="text-[10px] font-black text-gray-800 leading-tight uppercase">
-                              {edu.studyType || edu.degree || edu.area}
-                          </p>
-                          <p className="text-[9px] text-purple-600 font-bold mt-1">{edu.institution || edu.school}</p>
-                          <p className="text-[8px] text-gray-400 font-bold">{edu.startDate || edu.year}</p>
-                      </div>
-                  ))}
-              </div>
-          </section>
-
-          {/* Section Loisir  */}
-          <section className="mb-10">
-              <h3 className="text-[#a855f7] text-xs font-black uppercase tracking-[0.2em] mb-4">Loisirs</h3>
-              <div className="flex flex-wrap gap-2">
-                  {interests.map((interest, i) => (
-                      <span key={i} className="text-[10px] text-gray-500 italic">
-                          {typeof interest === 'object' ? interest.name : interest}
-                          {i < interests.length - 1 ? " • " : ""}
-                      </span>
-                  ))}
-              </div>
-          </section>
-
+          {/* LANGUES */}
           <section>
-              <h3 className="text-[#a855f7] text-xs font-black uppercase tracking-[0.2em] mb-4">Contact</h3>
-              <div className="text-[10px] space-y-2 opacity-90">
-                  <p className="flex items-center gap-2">📧 {basics.email || "Non renseigné"}</p>
-                  <p className="flex items-center gap-2">📞 {basics.phone || "Non renseigné"}</p>
-                  <p className="flex items-center gap-2 text-wrap">📍 {basics.location?.city || basics.location?.address || "France"}</p> 
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-4" style={{ color: secondaryColor }}>Langues</h3>
+              <div className="space-y-2">
+                  {languages.map((lang, i) => {
+                      const languageName = lang.language || lang.name || lang;
+                      return (
+                        <div key={i} className="flex justify-between items-center text-[11px] font-medium text-gray-700">
+                            <span>{languageName}</span>
+                            <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map((dot) => (
+                                    <div key={dot} className="w-1.5 h-1.5 rounded-full" 
+                                         style={{ backgroundColor: dot <= 4 ? primaryColor : '#e5e7eb' }}></div>
+                                ))}
+                            </div>
+                        </div>
+                      );
+                  })}
               </div>
           </section>
-          
         </aside>
 
-        {/* COLONNE DROITE - EXPÉRIENCES & PROFIL */}
-        <main className="flex-1 p-12">
+        {/* COLONNE DROITE (MAIN) */}
+        <main className="flex-1 p-12 overflow-hidden">
+          
+          {/* EXPÉRIENCES */}
           <section className="mb-12">
-            <div className="flex items-center gap-4 mb-6">
-              <span className="h-[2px] w-8 bg-purple-500"></span>
-              <h3 className="text-lg font-black uppercase italic text-gray-800">À propos de moi</h3>
-            </div>
-            <p className="text-sm leading-relaxed text-gray-600 font-medium">
-              {basics.summary || "Aucun résumé disponible."}
-            </p>
-          </section>
-
-          <section>
             <div className="flex items-center gap-4 mb-8">
-              <span className="h-[2px] w-8 bg-purple-500"></span>
-              <h3 className="text-lg font-black uppercase italic text-gray-800">Parcours</h3>
+              <span className="h-[2px] w-8" style={{ backgroundColor: secondaryColor }}></span>
+              <h3 className="text-lg font-black uppercase italic text-gray-800">Expériences</h3>
             </div>
-            
             <div className="space-y-10">
               {work.map((exp, i) => (
                 <div key={i} className="group">
                   <div className="flex justify-between items-end mb-2">
-                    <h4 className="text-md font-black text-gray-900 group-hover:text-purple-600 transition-colors uppercase">
+                    <h4 className="text-md font-black text-gray-900 group-hover:text-indigo-600 transition-colors uppercase leading-none">
                       {exp.position}
                     </h4>
-                    <span className="text-[10px] font-black text-gray-400 bg-gray-100 px-2 py-1 rounded">
-                      {exp.startDate} {exp.endDate ? `/ ${exp.endDate}` : "/ Présent"}
+                    <span className="text-[9px] font-black text-gray-400 bg-gray-100 px-2 py-1 rounded whitespace-nowrap">
+                      {exp.startDate} — {exp.endDate || "Présent"}
                     </span>
                   </div>
-                  <p className="text-xs font-bold text-purple-500 mb-4 uppercase tracking-wider">{exp.name || exp.company}</p>
+                  <p className="text-xs font-bold mb-4 uppercase tracking-wider" style={{ color: primaryColor }}>{exp.name || exp.company}</p>
                   <ul className="space-y-2">
-                    {(exp.highlights || exp.tasks || []).map((task, j) => (
-                      <li key={j} className="text-[11px] text-gray-500 flex gap-2">
-                        <span className="text-purple-400 font-bold">▹</span>
+                    {(exp.highlights || []).map((task, j) => (
+                      <li key={j} className="text-[11px] text-gray-500 flex gap-2 leading-relaxed">
+                        <span style={{ color: primaryColor }}>▹</span>
                         {task}
                       </li>
                     ))}
@@ -145,6 +125,32 @@ export default function CVTemplateCreatif({ data }) {
               ))}
             </div>
           </section>
+
+          {/* PROJETS (AJOUTÉ) */}
+          {projects.length > 0 && (
+            <section>
+              <div className="flex items-center gap-4 mb-8">
+                <span className="h-[2px] w-8" style={{ backgroundColor: secondaryColor }}></span>
+                <h3 className="text-lg font-black uppercase italic text-gray-800">Projets Clés</h3>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                {projects.map((proj, i) => (
+                  <div key={i} className="p-4 rounded-xl border-2 border-dashed bg-gray-50/50 transition-all hover:bg-white hover:shadow-md"
+                       style={{ borderColor: `${primaryColor}15` }}>
+                    <h4 className="text-xs font-black uppercase mb-1" style={{ color: primaryColor }}>{proj.name}</h4>
+                    <p className="text-[11px] text-gray-600 leading-relaxed mb-3">{proj.description}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {proj.highlights?.map((h, j) => (
+                        <span key={j} className="text-[9px] font-bold px-2 py-0.5 rounded bg-white border border-gray-100 text-gray-400">
+                          #{h}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </main>
       </div>
     </div>

@@ -10,7 +10,9 @@ export default function CareerPreview({
     isEditingLetter, 
     setIsEditingLetter,
     downloadPDF,
-    downloadLetterPDF 
+    downloadLetterPDF,
+    theme,
+    setTheme
 }) {
 
     const [isSaving, setIsSaving] = useState(false);
@@ -113,7 +115,7 @@ export default function CareerPreview({
                     
                     {activeTab === 'cv' && (
                         <div id="cv-preview" className="bg-white shadow-2xl">
-                            <SelectedCV data={result} />
+                            <SelectedCV data={result} theme={theme} />
                         </div>
                     )}
                     
