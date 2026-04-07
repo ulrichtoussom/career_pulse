@@ -5,19 +5,18 @@ export default function ImportCV({ onImport }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Parser de CV simple - transforme le texte en JSON Resume
+  // Parser intelligent pour extraire les données structurées du CV
   const parseCV = (text) => {
-    const lines = text.split('\n').filter(l => l.trim());
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
     
-    // Extraction basique des informations
     const resumeData = {
       basics: {
-        name: extractName(text),
-        label: extractTitle(lines),
+        name: extractName(lines),
+        label: extractLabel(lines),
         email: extractEmail(text),
         phone: extractPhone(text),
         url: extractUrl(text),
-        summary: extractSummary(lines),
+        summary: extractSummary(text, lines),
         location: {
           address: '',
           postalCode: '',
@@ -25,12 +24,12 @@ export default function ImportCV({ onImport }) {
           countryCode: 'FR',
           region: ''
         },
-        profiles: extractProfiles(lines)
+        profiles: extractProfiles(text)
       },
-      work: extractWork(lines),
-      education: extractEducation(lines),
-      skills: extractSkills(lines),
-      languages: extractLanguages(lines),
+      work: extractWork(text, lines),
+      education: extractEducation(text, lines),
+      skills: extractSkills(text, lines),
+      languages: extractLanguages(text, lines),
       volunteer: [],
       awards: [],
       certificates: [],
@@ -43,19 +42,23 @@ export default function ImportCV({ onImport }) {
     return resumeData;
   };
 
-  const extractName = (text) => {
-    const lines = text.split('\n');
-    // Premier ligne souvent le nom
-    return lines[0]?.trim() || 'Votre Nom';
+  const extractName = (lines) => {
+    // Le nom est généralement la première ligne
+    return lines[0] || 'Votre Nom';
   };
 
-  const extractTitle = (lines) => {
-    // Chercher des mots clés de titre
-    const titleKeywords = ['développeur', 'ingénieur', 'manager', 'designer', 'consultant', 'chef', 'specialist', 'expert'];
-    for (let line of lines) {
+  const extractLabel = (lines) => {
+    // Le titre est généralement la deuxième ligne ou contient un titre professionnel
+    if (lines[1]) return lines[1];
+    
+    const titleKeywords = ['développeur', 'ingénieur', 'manager', 'designer', 'consultant', 
+                          'chef', 'specialist', 'expert', 'analyst', 'architect', 'lead',
+                          'senior', 'junior', 'architect', 'devops', 'data scientist'];
+    
+    for (let line of lines.slice(0, 10)) {
       const lower = line.toLowerCase();
       if (titleKeywords.some(kw => lower.includes(kw))) {
-        return line.trim();
+        return line;
       }
     }
     return 'Titre Professionnel';
@@ -68,7 +71,8 @@ export default function ImportCV({ onImport }) {
   };
 
   const extractPhone = (text) => {
-    const phoneRegex = /(\+?33|0)[1-9](?:[0-9]{8}|[0-9]{7}(?:\s[0-9]{2})?)/;
+    // Support plusieurs formats de téléphone
+    const phoneRegex = /(\+?33|0)[1-9](?:[0-9]{8}|[0-9]{7}(?:\s[0-9]{2})?)|(\+?[0-9]{1,3}\s?[0-9]{6,14})/;
     const match = text.match(phoneRegex);
     return match ? match[0] : '';
   };
@@ -81,113 +85,246 @@ export default function ImportCV({ onImport }) {
 
   const extractCity = (lines) => {
     // Chercher une ligne avec une ville commune française
-    const cities = ['paris', 'lyon', 'marseille', 'toulouse', 'nice', 'nantes', 'strasbourg'];
+    const cities = ['paris', 'lyon', 'marseille', 'toulouse', 'nice', 'nantes', 'strasbourg',
+                   'bordeaux', 'lille', 'rennes', 'reims', 'monaco', 'dijon'];
     for (let line of lines) {
       const lower = line.toLowerCase();
       if (cities.some(city => lower.includes(city))) {
-        return line.trim();
+        // Retourner juste la ville, pas toute la ligne
+        return cities.find(city => lower.includes(city)) || line;
       }
     }
     return '';
   };
 
-  const extractSummary = (lines) => {
-    // Prendre les premières lignes non vides comme résumé
+  const extractSummary = (text, lines) => {
+    // Chercher une section résumé professionnel
+    const summaryPatterns = [
+      /résumé\s*professionnel[\s\n]+([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i,
+      /summary[\s\n]+([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i,
+      /profil[\s\n]+([\s\S]*?)(?=\n\n|\n[A-Z]|$)/i,
+    ];
+
+    for (let pattern of summaryPatterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim().split('\n')[0];
+      }
+    }
+
+    // Sinon retourner les 2-3 premières lignes utiles
     let summary = [];
     for (let line of lines.slice(0, 5)) {
-      if (line.trim() && !line.includes('@') && !line.match(/^\d/)) {
+      if (line.trim() && !line.includes('@') && !line.match(/^\d/) && line.length > 10) {
         summary.push(line.trim());
+        if (summary.length >= 2) break;
       }
     }
     return summary.join(' ');
   };
 
-  const extractProfiles = (lines) => {
+  const extractProfiles = (text) => {
     const profiles = [];
-    const text = lines.join(' ').toLowerCase();
-    
-    if (text.includes('linkedin')) {
-      profiles.push({ network: 'LinkedIn', username: '', url: '' });
-    }
-    if (text.includes('github')) {
-      profiles.push({ network: 'GitHub', username: '', url: '' });
-    }
-    if (text.includes('twitter')) {
-      profiles.push({ network: 'Twitter', username: '', url: '' });
-    }
-    
-    return profiles.length > 0 ? profiles : [{ network: 'LinkedIn', username: '', url: '' }];
-  };
+    const lower = text.toLowerCase();
 
-  const extractWork = (lines) => {
-    const work = [];
-    const text = lines.join('\n');
-    
-    // Chercher des sections "Expérience" ou "Experience"
-    const expRegex = /exp[eé]rien[ce]{2}|professionn[^ ]*/i;
-    const expMatch = text.match(expRegex);
-    
-    if (expMatch) {
-      // Créer une entrée par défaut
-      work.push({
-        name: 'Entreprise',
-        position: 'Poste',
-        url: '',
-        startDate: '',
-        endDate: '',
-        summary: 'Description de votre expérience',
-        highlights: ['Réalisation 1', 'Réalisation 2']
+    if (lower.includes('linkedin')) {
+      const linkedinUrl = text.match(/https?:\/\/(www\.)?linkedin\.com\/in\/[^\s]+/i);
+      profiles.push({ 
+        network: 'LinkedIn', 
+        username: linkedinUrl ? linkedinUrl[0].split('/in/')[1].split('/')[0] : '', 
+        url: linkedinUrl ? linkedinUrl[0] : '' 
       });
     }
+    if (lower.includes('github')) {
+      const githubUrl = text.match(/https?:\/\/(www\.)?github\.com\/[^\s]+/i);
+      profiles.push({ 
+        network: 'GitHub', 
+        username: githubUrl ? githubUrl[0].split('/')[3] : '', 
+        url: githubUrl ? githubUrl[0] : '' 
+      });
+    }
+    if (lower.includes('twitter') || lower.includes('x.com')) {
+      profiles.push({ network: 'Twitter', username: '', url: '' });
+    }
+
+    return profiles.length > 0 ? profiles : [];
+  };
+
+  const extractWork = (text, lines) => {
+    const work = [];
     
+    // Chercher des sections d'expérience
+    const expRegex = /(exp[eé]rien[ce]{2}|professionn[^ ]*|work experience|poste|emploi)[\s\n]*([\s\S]*?)(?=\n\n[A-Z]|FORMATION|EDUCATION|COMPÉTENCES|SKILLS|$)/i;
+    const expMatch = text.match(expRegex);
+    
+    if (expMatch && expMatch[2]) {
+      const experienceText = expMatch[2];
+      
+      // Extraire chaque entrée de travail (généralement séparées par des tirets ou des nouvelles lignes)
+      const jobRegex = /(?:^|\n)(.*?(?:développeur|ingénieur|manager|consultant|chef|lead|senior|junior|analyst|architect).*?)\s*[-––]\s*(.+?)(?=\n(?:.*?(?:développeur|ingénieur|manager|consultant|chef|lead|senior|junior|analyst|architect)|$))/gim;
+      
+      let jobMatch;
+      while ((jobMatch = jobRegex.exec(experienceText)) !== null) {
+        const titleAndCompany = jobMatch[1];
+        const dateAndDetails = jobMatch[2];
+        
+        // Parser: "Position - Company (2020 - 2022)"
+        const positionMatch = titleAndCompany.match(/^(.*?)\s*(?:@|-|à|–|–)?\s*(.*)$/);
+        const position = positionMatch ? positionMatch[1].trim() : titleAndCompany;
+        const company = positionMatch && positionMatch[2] ? positionMatch[2].trim() : 'Entreprise';
+        
+        // Extraire les dates
+        const dateMatch = dateAndDetails.match(/(\d{4})\s*[-–––]\s*(?:(présent|today|now|actuel|current)|(\d{4}))/i);
+        const startDate = dateMatch ? `${dateMatch[1]}-01-01` : '';
+        const endDate = dateMatch && dateMatch[3] ? `${dateMatch[3]}-01-01` : dateMatch && dateMatch[2] ? '' : '';
+        
+        // Extraire les highlights (puces)
+        const highlightLines = dateAndDetails.split('\n').filter(l => l.trim().startsWith('-') || l.trim().startsWith('•'));
+        const highlights = highlightLines.map(l => l.trim().replace(/^[-–•]\s*/, ''));
+        
+        if (position) {
+          work.push({
+            name: company,
+            position: position,
+            url: '',
+            startDate: startDate,
+            endDate: endDate,
+            summary: '',
+            highlights: highlights.length > 0 ? highlights : ['Description à ajouter']
+          });
+        }
+      }
+    }
+
     return work;
   };
 
-  const extractEducation = (lines) => {
+  const extractEducation = (text, lines) => {
     const education = [];
-    const text = lines.join('\n').toLowerCase();
     
-    // Chercher des sections "Formation" ou "Education"
-    if (text.includes('formation') || text.includes('education') || text.includes('diplôme')) {
-      education.push({
-        institution: 'École/Université',
-        url: '',
-        studyType: 'Diplôme',
-        area: 'Domaine d\'étude',
-        startDate: '',
-        endDate: '',
-        score: '',
-        courses: []
-      });
+    // Chercher la section formation/éducation
+    const eduRegex = /(formation|education|études|diplôme)[\s\n]*([\s\S]*?)(?=\n\n[A-Z]|COMPÉTENCES|SKILLS|EXPÉRIENCE|$)/i;
+    const eduMatch = text.match(eduRegex);
+    
+    if (eduMatch && eduMatch[2]) {
+      const educationText = eduMatch[2];
+      
+      // Extraire chaque entrée d'éducation
+      const schoolRegex = /(?:^|\n)((?:master|licence|bac|doctorat|diplôme|degree|bachelor|phd)[^\n]*)\s*[-–––]?\s*([^\n]*(?:université|école|institute|académie|college)[^\n]*)\s*(?:\(([0-9]{4})\))?/gim;
+      
+      let schoolMatch;
+      while ((schoolMatch = schoolRegex.exec(educationText)) !== null) {
+        const studyType = schoolMatch[1].trim();
+        const institution = schoolMatch[2].trim();
+        const year = schoolMatch[3] || '';
+        
+        // Extraire le domaine d'étude
+        const areaMatch = studyType.match(/(?:en|in|d'?|de)\s+([^-()]+)/i);
+        const area = areaMatch ? areaMatch[1].trim() : '';
+        
+        if (institution || studyType) {
+          education.push({
+            institution: institution || 'École/Université',
+            url: '',
+            studyType: studyType.split(/[-–]/)[0].trim(),
+            area: area,
+            startDate: year ? `${year}-01-01` : '',
+            endDate: '',
+            score: '',
+            courses: []
+          });
+        }
+      }
     }
-    
+
     return education;
   };
 
-  const extractSkills = (lines) => {
+  const extractSkills = (text, lines) => {
     const skills = [];
-    const text = lines.join('\n').toLowerCase();
     
-    // Chercher des sections "Compétences" ou "Skills"
-    if (text.includes('compétence') || text.includes('skill') || text.includes('technologies')) {
-      skills.push(
-        { name: 'JavaScript', level: 'Advanced', keywords: [] },
-        { name: 'React', level: 'Advanced', keywords: [] }
-      );
+    // Chercher la section compétences/skills
+    const skillsRegex = /(compétence|skill|technolog|langage|framework|outils?|tools)[\s\n]*([\s\S]*?)(?=\n\n[A-Z]|LANGUES?|LANGUAGES?|EXPÉRIENCE|$)/i;
+    const skillsMatch = text.match(skillsRegex);
+    
+    if (skillsMatch && skillsMatch[2]) {
+      const skillsText = skillsMatch[2];
+      
+      // Parser les compétences avec des catégories
+      const categories = [
+        { name: 'Langages', pattern: /(langage|language)[^:]*:\s*([^:\n]+)/gi },
+        { name: 'Frameworks', pattern: /(framework)[^:]*:\s*([^:\n]+)/gi },
+        { name: 'Bases de données', pattern: /(base|database|bdd)[^:]*:\s*([^:\n]+)/gi },
+        { name: 'Outils', pattern: /(outil|tool)[^:]*:\s*([^:\n]+)/gi },
+      ];
+
+      for (let cat of categories) {
+        let catMatch;
+        while ((catMatch = cat.pattern.exec(skillsText)) !== null) {
+          const items = catMatch[2].split(/[,;]/);
+          items.forEach(item => {
+            const skill = item.trim();
+            if (skill && skill.length > 2) {
+              skills.push({
+                name: skill,
+                level: 'Intermédiaire',
+                keywords: []
+              });
+            }
+          });
+        }
+      }
+
+      // Si pas de catégories trouvées, parser comme une liste
+      if (skills.length === 0) {
+        const skillLines = skillsText.split('\n').filter(l => l.trim());
+        skillLines.forEach(line => {
+          // Parser les items séparés par des virgules
+          const items = line.split(/[,;–—]/);
+          items.forEach(item => {
+            const skill = item.trim().replace(/^[-•]\s*/, '');
+            if (skill && skill.length > 2 && !skill.includes(':')) {
+              skills.push({
+                name: skill,
+                level: 'Intermédiaire',
+                keywords: []
+              });
+            }
+          });
+        });
+      }
     }
-    
+
     return skills;
   };
 
-  const extractLanguages = (lines) => {
+  const extractLanguages = (text, lines) => {
     const languages = [];
-    const text = lines.join('\n');
     
-    // Chercher des sections "Langues"
-    if (text.toLowerCase().includes('langue')) {
-      languages.push({ language: 'Français', fluency: 'Native speaker' });
+    // Chercher la section langues
+    const langRegex = /(langue|language)[s]?[\s\n]*([\s\S]*?)(?=\n\n[A-Z]|CERTIFICATION|$)/i;
+    const langMatch = text.match(langRegex);
+    
+    if (langMatch && langMatch[2]) {
+      const languagesText = langMatch[2];
+      
+      // Parser les langues: "Français - Natif" ou "Français (Natif)"
+      const langPattern = /([a-zàâäéèêëïîôöûüç]+)\s*[-–––:]?\s*([^(\n]*(?:\([^)]*\))?|[^\n]*)/gi;
+      
+      let langItem;
+      while ((langItem = langPattern.exec(languagesText)) !== null) {
+        const language = langItem[1].trim();
+        const fluency = langItem[2].trim().replace(/[()]/g, '');
+        
+        if (language && language.length > 2) {
+          languages.push({
+            language: language.charAt(0).toUpperCase() + language.slice(1),
+            fluency: fluency || 'Courant'
+          });
+        }
+      }
     }
-    
+
     return languages;
   };
 
@@ -258,7 +395,7 @@ export default function ImportCV({ onImport }) {
           Importer un CV
         </h3>
         <p className="text-sm text-gray-600 mb-4">
-          Téléchargez votre CV en format TXT ou PDF et nous le convertirons en JSON Resume
+          Téléchargez votre CV en format TXT ou PDF et nous l'analyserons pour préremplir votre template
         </p>
 
         <label className="inline-block">
@@ -270,7 +407,7 @@ export default function ImportCV({ onImport }) {
             className="hidden"
           />
           <span className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl cursor-pointer transition-colors">
-            {isLoading ? '⏳ Chargement...' : '📤 Importer un CV'}
+            {isLoading ? '⏳ Analyse en cours...' : '📤 Importer un CV'}
           </span>
         </label>
 
@@ -281,8 +418,9 @@ export default function ImportCV({ onImport }) {
         )}
 
         <p className="text-[10px] text-gray-500 mt-4 leading-relaxed">
-          💡 Conseils: Importez votre CV en TXT ou PDF pour de meilleurs résultats.<br/>
-          Les champs détectés: Nom, Email, Téléphone, Expérience, Formation, Compétences
+          💡 Analyse intelligente: Notre système extrait automatiquement<br/>
+          Nom, Email, Expérience, Formation, Compétences, Langues et plus encore!<br/>
+          Vous pourrez modifier tous les champs après l'import.
         </p>
       </div>
     </div>
