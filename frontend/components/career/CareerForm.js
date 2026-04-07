@@ -4,9 +4,6 @@
 export default function CareerForm({ 
     generate, 
     loading, 
-    templates, 
-    selectedTemplate, 
-    setSelectedTemplate, 
     fileName, 
     setFileName 
 }) {
@@ -14,26 +11,6 @@ export default function CareerForm({
         <div className="w-full md:w-[350px] bg-white border-r p-6 overflow-y-auto custom-scrollbar">
             <h2 className="text-lg font-bold mb-6 italic">Career Studio</h2>
             
-            <div className="mb-8">
-                <label className="text-xs font-bold text-gray-400 uppercase mb-3 block">1. Style du CV</label>
-                <div className="grid grid-cols-3 gap-2">
-                    {Object.keys(templates).map((t) => (
-                        <button
-                            key={t}
-                            type="button" 
-                            onClick={() => setSelectedTemplate(t)}
-                            className={`py-2 px-1 text-[10px] font-bold uppercase rounded-lg border-2 transition-all ${
-                                selectedTemplate === t 
-                                ? 'border-blue-600 bg-blue-50 text-blue-600' 
-                                : 'border-gray-100 text-gray-400 hover:border-gray-200'
-                            }`}
-                        >
-                            {t}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
             <form onSubmit={generate} className="space-y-4">
                 <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-400 uppercase">Optionnel : Ancien CV (PDF)</label>
@@ -59,7 +36,7 @@ export default function CareerForm({
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase">2. Mon Profil</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase">1. Mon Profil</label>
                     <textarea 
                         name="profile_summary" 
                         placeholder="Ou décrivez brièvement votre parcours ici..." 
@@ -68,7 +45,7 @@ export default function CareerForm({
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase">3. L'Annonce</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase">2. L'Annonce</label>
                     <textarea 
                         name="job_description" 
                         placeholder="Collez l'offre ici..." 
