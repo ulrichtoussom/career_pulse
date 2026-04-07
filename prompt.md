@@ -334,3 +334,24 @@ je voudrai appoter une nouvelle vision a l application: \
 - donner a l utilisateur la possibilite de  choisir un template json resume pour l edition de son cv au lieu de pdf vite 
 - creation de AppeareancSetting pour la modification visuelle de notre cv espacement, police,taile, ... etc 
 - n'oublie surtout pas de gerer le responsive a chaque fois que tu modifie un page 
+
+j ai beau choisir un template mais lors de l edition de rend compte quelle sont pratiquement les memes ! 
+Pourtant chacun de des template lors de leur edition doivent avoir leur particularité des couleur propre , etc . 
+Aussi un utilisateur bien qu'aillant choisir un template dois pouvoir switcher d un template a l autre pour voir les differences .
+possibilite de mettre un blog de texte ou mot du pdf en gras .
+possiblite d'editer les titre de section dans le PDF Formation ---- > peut choisir Mettre education  
+
+Jusqu'ici ne suis pas sastifait pas la qaulite des templates que tu me propose pourtant il tlment de template moderne , exclusive t futuriste que tu pourrais me proposer il ya des templates qui compartionne la age en plus horizotale , d autre qui rajoute un backgroground a l entete ou leger effet sur le profil pour le rendre mordenne bref il ya tellement de template chouette que tu pourrais faire ou copier dans le site de json resume , essaye de me proposer au finale 8 template mais cette fois 8 template qui en vaut la peine 
+
+Ajoutons une nouvelle fonctionnaties, possibite d importe un cv 
+_  le cv sera directement tranformer en json resume  et appliquer a l un des template que l utilisateur aura choisir 
+- possibilte de modifier ce template avec nos section de form dedié modification des template 
+- rendre notre boutton exportation de pdf fonctionnelles 
+
+
+
+je reussis a importer le fichier pdf mais aucun de mon pdf n est preremplir avec les infromation du cv  je m attendais a ce que l on puisse capter les informations present dans le cv sous forme de json resume comme le fait flowcv et preremplir notre template avec . on pourra eventuellement modifier ces informations avec ResumeForm apres . 
+le output que j ai actuellement et tres loin de ce que j attendans de toi .
+output actuelle : 
+
+Il ya toujour pour d inconherence apres l import du fichier. je te joins une capture d ecran du resultat qu on apres l import pour que tu constacte que c est tres incoherent et l on arrive toujour pas a capter les information dans le cv 
