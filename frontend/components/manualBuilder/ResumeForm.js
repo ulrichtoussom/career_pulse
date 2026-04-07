@@ -595,55 +595,57 @@ function FormSection({ title, section, children, expanded, onToggle, onTitleChan
 
   return (
     <section className="border border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-      <button
-        onClick={() => onToggle(section)}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          {isEditingTitle ? (
-            <input
-              autoFocus
-              value={tempTitle}
-              onChange={(e) => setTempTitle(e.target.value)}
-              onBlur={() => {
-                onTitleChange(section, tempTitle);
-                setIsEditingTitle(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+      <div className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors group">
+        <button
+          onClick={() => onToggle(section)}
+          className="flex items-center gap-2 flex-1 text-left"
+        >
+          <div className="flex items-center gap-2">
+            {isEditingTitle ? (
+              <input
+                autoFocus
+                value={tempTitle}
+                onChange={(e) => setTempTitle(e.target.value)}
+                onBlur={() => {
                   onTitleChange(section, tempTitle);
                   setIsEditingTitle(false);
-                }
-              }}
-              className="text-sm font-black uppercase tracking-[0.3em] text-gray-900 border-b-2 border-blue-500 focus:outline-none bg-transparent px-1"
-              onClick={(e) => e.stopPropagation()}
-            />
-          ) : (
-            <>
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    onTitleChange(section, tempTitle);
+                    setIsEditingTitle(false);
+                  }
+                }}
+                className="text-sm font-black uppercase tracking-[0.3em] text-gray-900 border-b-2 border-blue-500 focus:outline-none bg-transparent px-1"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
               <h3 className="text-sm font-black uppercase tracking-[0.3em] text-gray-900">
                 {title}
               </h3>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsEditingTitle(true);
-                  setTempTitle(title);
-                }}
-                className="p-1 text-gray-300 hover:text-gray-600 rounded opacity-0 group-hover:opacity-100"
-                title="Éditer le titre"
-              >
-                ✏️
-              </button>
-            </>
-          )}
-        </div>
-        <svg 
-          className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-        </svg>
-      </button>
+            )}
+          </div>
+          <svg 
+            className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </button>
+        {!isEditingTitle && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditingTitle(true);
+              setTempTitle(title);
+            }}
+            className="p-1 text-gray-300 hover:text-gray-600 rounded opacity-0 group-hover:opacity-100 ml-2"
+            title="Éditer le titre"
+          >
+            ✏️
+          </button>
+        )}
+      </div>
       {expanded && (
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 animate-in slide-in-from-top-2 duration-300">
           {children}
