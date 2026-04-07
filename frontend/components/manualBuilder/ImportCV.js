@@ -228,8 +228,8 @@ export default function ImportCV({ onImport }) {
       // Charger pdfjs dynamiquement (côté client uniquement)
       const pdfjsLib = await import('pdfjs-dist');
       
-      // Configurer le worker
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      // Configurer le worker - utiliser le fichier local dans public/
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
       
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
