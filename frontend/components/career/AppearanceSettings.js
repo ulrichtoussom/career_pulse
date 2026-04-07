@@ -1,8 +1,9 @@
 // components/career/AppearanceSettings.js
 'use client'
 import { useState } from 'react';
+import { resumeTemplates, templateLayouts } from '@/frontend/data/resumeTemplates';
 
-export default function AppearanceSettings({ layout, setLayout }) {
+export default function AppearanceSettings({ layout, setLayout, currentTemplate, setTemplate, templates, templateLayouts: tl }) {
     const [expandedSection, setExpandedSection] = useState('colors');
     
     const colors = ['#2563eb', '#10b981', '#ef4444', '#f59e0b', '#6366f1', '#1f2937', '#7c3aed', '#ec4899', '#06b6d4'];
@@ -13,12 +14,26 @@ export default function AppearanceSettings({ layout, setLayout }) {
         { value: 'Garamond', label: 'Garamond (Élégant)' }
     ];
 
+    // Valeurs par défaut si layout est vide
+    const safeLayout = {
+        fontSize: layout?.fontSize ?? 11,
+        lineHeight: layout?.lineHeight ?? 1.6,
+        marginV: layout?.marginV ?? 50,
+        marginH: layout?.marginH ?? 55,
+        sectionSpacing: layout?.sectionSpacing ?? 32,
+        primaryColor: layout?.primaryColor ?? '#000000',
+        fontFamily: layout?.fontFamily ?? 'Inter',
+        headerStyle: layout?.headerStyle ?? 'line-bottom',
+        layout: layout?.layout ?? 'single-column',
+        ...layout
+    };
+
     const toggleSection = (section) => {
         setExpandedSection(expandedSection === section ? null : section);
     };
 
     const handleSliderChange = (field, value) => {
-        setLayout({ ...layout, [field]: parseFloat(value) });
+        setLayout({ ...safeLayout, [field]: parseFloat(value) });
     };
 
     return (
@@ -26,6 +41,29 @@ export default function AppearanceSettings({ layout, setLayout }) {
             <h4 className="text-[11px] font-black uppercase text-gray-400 tracking-widest px-4 py-3">
                 Personnalisation du Design
             </h4>
+
+            {/* TEMPLATES */}
+            <CollapsibleSection
+                title="🎨 Templates"
+                isExpanded={expandedSection === 'templates'}
+                onToggle={() => toggleSection('templates')}
+            >
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {resumeTemplates && resumeTemplates.map((t) => (
+                        <button
+                            key={t.name}
+                            onClick={() => setTemplate(t.layout)}
+                            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                                currentTemplate === t.layout
+                                    ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                    : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
+                            }`}
+                        >
+                            {t.icon} {t.name}
+                        </button>
+                    ))}
+                </div>
+            </CollapsibleSection>
 
             {/* COULEURS */}
             <CollapsibleSection
@@ -43,16 +81,16 @@ export default function AppearanceSettings({ layout, setLayout }) {
                             {colors.map(c => (
                                 <button 
                                     key={c}
-                                    onClick={() => setLayout({...layout, primaryColor: c})}
-                                    className={`w-8 h-8 rounded-lg border-2 transition-transform hover:scale-110 ${layout.primaryColor === c ? 'border-gray-800 shadow-md' : 'border-gray-200'}`}
+                                    onClick={() => setLayout({...safeLayout, primaryColor: c})}
+                                    className={`w-8 h-8 rounded-lg border-2 transition-transform hover:scale-110 ${safeLayout.primaryColor === c ? 'border-gray-800 shadow-md' : 'border-gray-200'}`}
                                     style={{ backgroundColor: c }}
                                     title={c}
                                 />
                             ))}
                             <input 
                                 type="color" 
-                                value={layout.primaryColor}
-                                onChange={(e) => setLayout({...layout, primaryColor: e.target.value})}
+                                value={safeLayout.primaryColor}
+                                onChange={(e) => setLayout({...safeLayout, primaryColor: e.target.value})}
                                 className="w-8 h-8 rounded-lg cursor-pointer border border-gray-200"
                             />
                         </div>
@@ -61,7 +99,7 @@ export default function AppearanceSettings({ layout, setLayout }) {
                     {/* Preview couleur */}
                     <div className="p-3 rounded-xl border border-gray-200 bg-gray-50">
                         <p className="text-[10px] font-bold text-gray-600 mb-2">APERÇU</p>
-                        <div className="h-8 rounded-lg" style={{ backgroundColor: layout.primaryColor }} />
+                        <div className="h-8 rounded-lg" style={{ backgroundColor: safeLayout.primaryColor }} />
                     </div>
                 </div>
             </CollapsibleSection>
@@ -79,8 +117,8 @@ export default function AppearanceSettings({ layout, setLayout }) {
                         </label>
                         <select 
                             className="w-full text-xs border border-gray-200 p-2.5 rounded-xl bg-gray-50 outline-none focus:ring-2 focus:ring-blue-100"
-                            value={layout.fontFamily}
-                            onChange={(e) => setLayout({...layout, fontFamily: e.target.value})}
+                            value={safeLayout.fontFamily}
+                            onChange={(e) => setLayout({...safeLayout, fontFamily: e.target.value})}
                         >
                             {fonts.map(f => (
                                 <option key={f.value} value={f.value}>{f.label}</option>
@@ -91,14 +129,14 @@ export default function AppearanceSettings({ layout, setLayout }) {
                     {/* Taille de police */}
                     <div>
                         <label className="text-xs font-black uppercase tracking-widest text-gray-700 block mb-2">
-                            Taille de police: {layout.fontSize}pt
+                            Taille de police: {safeLayout.fontSize}pt
                         </label>
                         <input 
                             type="range" 
                             min="8" 
                             max="14" 
                             step="0.5"
-                            value={layout.fontSize}
+                            value={safeLayout.fontSize}
                             onChange={(e) => handleSliderChange('fontSize', e.target.value)}
                             className="w-full"
                         />
@@ -107,14 +145,14 @@ export default function AppearanceSettings({ layout, setLayout }) {
                     {/* Hauteur de ligne */}
                     <div>
                         <label className="text-xs font-black uppercase tracking-widest text-gray-700 block mb-2">
-                            Interligne: {layout.lineHeight.toFixed(1)}
+                            Interligne: {safeLayout.lineHeight.toFixed(1)}
                         </label>
                         <input 
                             type="range" 
                             min="1" 
                             max="2" 
                             step="0.1"
-                            value={layout.lineHeight}
+                            value={safeLayout.lineHeight}
                             onChange={(e) => handleSliderChange('lineHeight', e.target.value)}
                             className="w-full"
                         />

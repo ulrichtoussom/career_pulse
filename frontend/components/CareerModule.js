@@ -29,14 +29,26 @@ export default function CareerModule() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [activeTab, setActiveTab] = useState('cv'); 
-    const [selectedTemplate, setSelectedTemplate] = useState('Classic Pro');
+    const [selectedTemplate, setSelectedTemplate] = useState('classicPro');
     const [fileName, setFileName] = useState("");
     const [isEditingLetter, setIsEditingLetter] = useState(false);
     const [showDesignPanel, setShowDesignPanel] = useState(true);
     const [sectionTitles, setSectionTitles] = useState({});
 
-    // État du layout (appearance settings)
-    const [layout, setLayout] = useState(templateLayouts['Classic Pro'] || {});
+    // État du layout avec valeurs par défaut robustes
+    const defaultLayout = {
+        fontSize: 11,
+        lineHeight: 1.6,
+        marginV: 50,
+        marginH: 55,
+        sectionSpacing: 32,
+        primaryColor: '#000000',
+        fontFamily: 'Inter',
+        headerStyle: 'line-bottom',
+        layout: 'single-column'
+    };
+
+    const [layout, setLayout] = useState(templateLayouts[selectedTemplate] || defaultLayout);
 
     // --- LOGIQUE DE TÉLÉCHARGEMENT ---
     const downloadLetterPDF = () => {
@@ -111,7 +123,7 @@ export default function CareerModule() {
 
     const switchTemplate = (templateKey) => {
         setSelectedTemplate(templateKey);
-        setLayout(templateLayouts[templateKey] || {});
+        setLayout(templateLayouts[templateKey] || defaultLayout);
     };
 
     return (
