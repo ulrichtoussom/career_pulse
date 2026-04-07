@@ -1,15 +1,15 @@
 // components/CareerModule.js
 import { useState } from 'react';
 import { supabase } from '@/frontend/lib/supabaseClient'
-import CVTemplateModerne from './templates/CVTemplateModerne';
-import CVTemplateEpure from './templates/CVTemplateEpure';
-import CVTemplateCreatif from './templates/CVTemplateCreatif';
 
 // Imports des sous-composants
 import CareerForm from './career/CareerForm';
 import CareerPreview from './career/CareerPreview';
 import CareerHistory from './career/CareerHistory';
-import AppearanceSettings from './career/AppearanceSettings'; // Importation du nouveau composant
+import AppearanceSettings from './career/AppearanceSettings';
+
+// Import des templates premium du builder
+import { resumeTemplates, templateLayouts } from '@/frontend/data/resumeTemplates';
 
 export const adjustBrightness = (hex, amt) => {
     hex = hex.replace(/^#/, '');
@@ -22,41 +22,21 @@ export const adjustBrightness = (hex, amt) => {
     
     const fill = (n) => n.toString(16).padStart(2, '0');
     return `#${fill(r)}${fill(g)}${fill(b)}`;
-  };
+};
 
 export default function CareerModule() {
     
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [activeTab, setActiveTab] = useState('cv'); 
-    const [selectedTemplate, setSelectedTemplate] = useState('moderne');
+    const [selectedTemplate, setSelectedTemplate] = useState('Classic Pro');
     const [fileName, setFileName] = useState("");
     const [isEditingLetter, setIsEditingLetter] = useState(false);
     const [showDesignPanel, setShowDesignPanel] = useState(true);
+    const [sectionTitles, setSectionTitles] = useState({});
 
-    // État du Thème
-    const [theme, setTheme] = useState({
-        primaryColor: '#2563eb',
-        secondaryColor: '#6366f1',
-        fontFamily: 'font-sans',
-        spacing: 'normal',
-        borderRadius: '8px'
-    });
-
-    const templates = {
-        moderne: CVTemplateModerne,
-        epure: CVTemplateEpure,
-        creatif: CVTemplateCreatif
-    };
-
-    // Mapping pour transformer "moderne" en "Moderne" pour le sélecteur
-    const templateDisplayNames = {
-        moderne: 'Moderne',
-        epure: 'Épure',
-        creatif: 'Créatif'
-    };
-
-    const SelectedCV = templates[selectedTemplate];
+    // État du layout (appearance settings)
+    const [layout, setLayout] = useState(templateLayouts['Classic Pro'] || {});
 
     // --- LOGIQUE DE TÉLÉCHARGEMENT ---
     const downloadLetterPDF = () => {
@@ -70,16 +50,23 @@ export default function CareerModule() {
         doc.close();
     };
 
-    const downloadPDF = () => {
-        const content = document.getElementById('cv-preview').innerHTML;
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed'; iframe.style.bottom = '0'; iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = '0';
-        document.body.appendChild(iframe);
-        const doc = iframe.contentWindow.document;
-        doc.open();
-        // Injection du thème dans le print
-        doc.write(`<html><head><title>CV</title><script src="https://cdn.tailwindcss.com"></script><style>body { background: white; margin: 0; padding: 0; } #cv-preview { width: 210mm; min-height: 297mm; margin: 0 auto; } @page { size: A4; margin: 0; } @media print { body { -webkit-print-color-adjust: exact; } }</style></head><body><div id="cv-preview" class="${theme.fontFamily}">${content}</div><script>window.onload = () => { setTimeout(() => { window.print(); window.frameElement.remove(); }, 500); };</script></body></html>`);
-        doc.close();
+    const downloadPDF = async () => {
+        try {
+            const element = document.getElementById('resume-preview');
+            if (!element) {
+                alert('❌ Aperçu du CV non trouvé');
+                return;
+            }
+
+            const filename = fileName || `CV_${result?.basics?.name || 'Resume'}.pdf`;
+            
+            // Import dynamique pour éviter les problèmes SSR
+            const { exportToPDF } = await import('@/frontend/utils/pdfExport');
+            await exportToPDF('resume-preview', filename);
+        } catch (err) {
+            console.error('Erreur export PDF:', err);
+            alert('❌ Erreur lors de l\'export PDF');
+        }
     };
 
     // --- LOGIQUE DE GÉNÉRATION ---
@@ -109,8 +96,8 @@ export default function CareerModule() {
                     ...raw,
                     basics: raw.basics || {},
                     work: raw.work || [],
-                    education: raw.education || [], // <-- Vérifie que cette ligne existe bien
-                    projects: raw.projects,
+                    education: raw.education || [],
+                    projects: raw.projects || [],
                     analysis: raw.analysis || { strengths: [], gaps: [] }
                 };
                 setResult(safeData);
@@ -120,6 +107,11 @@ export default function CareerModule() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const switchTemplate = (templateKey) => {
+        setSelectedTemplate(templateKey);
+        setLayout(templateLayouts[templateKey] || {});
     };
 
     return (
@@ -137,9 +129,6 @@ export default function CareerModule() {
                         <CareerForm 
                             generate={generate}
                             loading={loading}
-                            templates={templates}
-                            selectedTemplate={selectedTemplate}
-                            setSelectedTemplate={setSelectedTemplate}
                             fileName={fileName}
                             setFileName={setFileName}
                         />
@@ -153,13 +142,14 @@ export default function CareerModule() {
                         setResult={setResult}
                         activeTab={activeTab}
                         setActiveTab={setActiveTab}
-                        SelectedCV={SelectedCV}
                         isEditingLetter={isEditingLetter}
                         setIsEditingLetter={setIsEditingLetter}
                         downloadPDF={downloadPDF}
                         downloadLetterPDF={downloadLetterPDF}
-                        theme={theme}
-                        setTheme={setTheme}
+                        layout={layout}
+                        selectedTemplate={selectedTemplate}
+                        sectionTitles={sectionTitles}
+                        setSectionTitles={setSectionTitles}
                     />
                 </div>
 
@@ -180,12 +170,14 @@ export default function CareerModule() {
                         <div className={`bg-white border-l h-full transition-all duration-300 ease-in-out overflow-hidden ${
                             showDesignPanel ? 'w-72 p-4 opacity-100' : 'w-0 p-0 opacity-0 border-none'
                         }`}>
-                            <div className="w-64"> {/* Container fixe pour éviter que le contenu ne saute pendant le slide */}
+                            <div className="w-64">
                                 <AppearanceSettings 
-                                    theme={theme} 
-                                    setTheme={setTheme}
-                                    currentTemplate={templateDisplayNames[selectedTemplate]}
-                                    setTemplate={(name) => setSelectedTemplate(name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""))}
+                                    layout={layout}
+                                    setLayout={setLayout}
+                                    currentTemplate={selectedTemplate}
+                                    setTemplate={switchTemplate}
+                                    templates={resumeTemplates}
+                                    templateLayouts={templateLayouts}
                                 />
                                 
                                 <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
@@ -193,7 +185,7 @@ export default function CareerModule() {
                                         onClick={downloadPDF}
                                         className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm"
                                     >
-                                        Exporter en PDF
+                                        ⬇ Télécharger PDF
                                     </button>
                                 </div>
                             </div>
