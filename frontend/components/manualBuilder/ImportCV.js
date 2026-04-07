@@ -204,11 +204,10 @@ export default function ImportCV({ onImport }) {
       if (file.type === 'text/plain') {
         text = await file.text();
       } else if (file.type === 'application/pdf') {
-        setError('Les fichiers PDF nécessitent une bibliothèque de parsing. Convertissez en TXT d\'abord.');
-        setIsLoading(false);
-        return;
+        // Extraire le texte du PDF
+        text = await extractTextFromPDF(file);
       } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        setError('Les fichiers DOCX nécessitent une bibliothèque de parsing. Convertissez en TXT d\'abord.');
+        setError('Les fichiers DOCX ne sont pas encore supportés. Convertissez en TXT ou PDF.');
         setIsLoading(false);
         return;
       } else {
@@ -224,6 +223,33 @@ export default function ImportCV({ onImport }) {
     }
   };
 
+  const extractTextFromPDF = async (file) => {
+    try {
+      // Charger pdfjs dynamiquement (côté client uniquement)
+      const pdfjsLib = await import('pdfjs-dist');
+      
+      // Configurer le worker
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      let fullText = '';
+      
+      // Extraire le texte de chaque page
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+      
+      return fullText;
+    } catch (err) {
+      throw new Error(`Erreur lors de la lecture du PDF: ${err.message}`);
+    }
+  };
+
   return (
     <div className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border-2 border-dashed border-blue-200">
       <div className="text-center">
@@ -232,7 +258,7 @@ export default function ImportCV({ onImport }) {
           Importer un CV
         </h3>
         <p className="text-sm text-gray-600 mb-4">
-          Téléchargez votre CV en format TXT et nous le convertirons en JSON Resume
+          Téléchargez votre CV en format TXT ou PDF et nous le convertirons en JSON Resume
         </p>
 
         <label className="inline-block">
@@ -255,7 +281,7 @@ export default function ImportCV({ onImport }) {
         )}
 
         <p className="text-[10px] text-gray-500 mt-4 leading-relaxed">
-          💡 Conseils: Collez votre CV en TXT pour de meilleurs résultats.<br/>
+          💡 Conseils: Importez votre CV en TXT ou PDF pour de meilleurs résultats.<br/>
           Les champs détectés: Nom, Email, Téléphone, Expérience, Formation, Compétences
         </p>
       </div>
