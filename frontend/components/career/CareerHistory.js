@@ -23,6 +23,7 @@ export default function CareerHistory({ onSelect }) {
                 .limit(10);
 
             if (error) throw error;
+            
             setHistory(data || []);
         } catch (error) {
             console.error("Erreur historique:", error.message);

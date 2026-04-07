@@ -2,136 +2,170 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/frontend/lib/supabaseClient'
-import ChatList from '@/frontend/components/ChatList';
-import ChatInput from '@/frontend/components/ChatInput';
 import Sidebar from '@/frontend/components/Sidebar';
-import CareerModule from '@/frontend/components/CareerModule'; // Assure-toi de créer ce fichier
-import { useChat } from '@/frontend/hooks/useChat';
+import CareerModule from '@/frontend/components/CareerModule';
+import ChatModule from '@/frontend/components/ChatModule';
+import LandingPage from '@/frontend/components/landingPage';
+import ResumeBuilder from '@/frontend/components/manualBuilder/ResumeBuilder';
 
-export default  function Home() {
-
+export default function Home() {
   const [user, setUser] = useState(null);
-  const [selectedChatId, setSelectedChatId] = useState(null);
+  const [view, setView] = useState('hub'); // 'hub', 'career', 'chat'
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  
-  // --- NOUVEL ÉTAT POUR LA NAVIGATION ---
-  const [view, setView] = useState('chat'); // 'chat' ou 'career'
-
-  const { messages, sendMessage, loading, error } = useChat(selectedChatId);
-
-  // Fonction intermédiaire pour gérer l'envoi et la création de session
-  const onSend = async (content) => {
-    const chatId = await sendMessage(content);
-    if (chatId && !selectedChatId) {
-      setSelectedChatId(chatId);
-    }
-  };
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
-
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
     });
-
     return () => authListener.subscription.unsubscribe();
   }, []);
 
-  if (!user) {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
+  if (!user) return <LandingPage />;
+
+  // --- NAVIGATION HUB ---
+  if (view === 'hub') {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-[#f8fafd]">
-        <div className="w-12 h-12 bg-gradient-to-tr from-blue-400 to-purple-500 rounded-full mb-6" />
-        <h1 className="text-3xl font-semibold text-gray-800 mb-2">Bienvenue sur le Chat IA </h1>
-        <p className="text-gray-500 mb-6">Connectez-vous pour commencer à explorer.</p>
-        <a href="/login" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full transition-all shadow-lg font-medium">
-          Se connecter
-        </a>
+      <div className="min-h-screen bg-[#fbfbfd] text-[#1d1d1f] font-sans">
+        {/* NAV BAR */}
+        <nav className="h-20 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-50 px-8 flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <span className="font-black text-xl tracking-tighter uppercase text-blue-600">
+                CareerPulse
+            </span>
+            <div className="hidden md:flex gap-6">
+              <button onClick={() => setView('career')} className="text-sm font-semibold text-gray-500 hover:text-black transition-colors">Générer votre CV</button>
+              <button onClick={() => setView('chat')} className="text-sm font-semibold text-gray-500 hover:text-black transition-colors">IA Career Coach</button>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-bold text-gray-700">{user.email}</span>
+            <button 
+              onClick={handleLogout}
+              className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-all"
+              title="Déconnexion"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            </button>
+          </div>
+        </nav>
+
+        {/* BODY / DASHBOARD */}
+        <div className="max-w-6xl mx-auto px-6 py-16">
+          <header className="mb-16">
+            <h1 className="text-5xl font-black tracking-tight mb-4">Tableau de bord</h1>
+            <p className="text-xl text-gray-500">Sélectionnez un outil pour propulser votre candidature.</p>
+          </header>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {/* CARD 1: ELITE CV DESIGNER */}
+            <div 
+              onClick={() => setView('career')}
+              className="group cursor-pointer bg-white border border-gray-100 p-12 rounded-[40px] shadow-sm hover:shadow-2xl hover:border-blue-100 transition-all duration-300 min-h-[400px] flex flex-col justify-between"
+            >
+              <div>
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </div>
+                <h2 className="text-4xl font-black mb-4">Elite CV Designer</h2>
+                <p className="text-lg text-gray-500 leading-relaxed max-w-sm">
+                  Créez des dossiers de candidature sur-mesure optimisés pour les algorithmes de recrutement.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-blue-600 font-bold">
+                Lancer l'outil <span>→</span>
+              </div>
+            </div>
+
+            {/* CARD 2: IA CAREER COACH */}
+            <div 
+              onClick={() => setView('chat')}
+              className="group cursor-pointer bg-white border border-gray-100 p-12 rounded-[40px] shadow-sm hover:shadow-2xl hover:border-purple-100 transition-all duration-300 min-h-[400px] flex flex-col justify-between"
+            >
+              <div>
+                <div className="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-purple-600 group-hover:text-white transition-all">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                </div>
+                <h2 className="text-4xl font-black mb-4">IA Career Coach</h2>
+                <p className="text-lg text-gray-500 leading-relaxed max-w-sm">
+                  Discutez avec une intelligence spécialisée pour affiner votre stratégie et vos entretiens.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-purple-600 font-bold">
+                Ouvrir le chat <span>→</span>
+              </div>
+            </div>
+
+            {/* CARD 3: MANUAL BUILDER */}
+
+            <div 
+              onClick={() => setView('builder')}
+              className="group cursor-pointer bg-white border border-gray-100 p-12 rounded-[40px] shadow-sm hover:shadow-2xl hover:border-purple-100 transition-all duration-300 min-h-[400px] flex flex-col justify-between"
+            >
+              <div>
+                <div className="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-purple-600 group-hover:text-white transition-all">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                </div>
+                <h2 className="text-4xl font-black mb-4">Manual Builder</h2>
+                <p className="text-lg text-gray-500 leading-relaxed max-w-sm">
+                  Préférez-vous la touche humaine ? Construisez votre dossier de candidature à votre rythme.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-purple-600 font-bold">
+                Construction Manuelle <span>→</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
+  // --- VUE APPLICATION (Avec Sidebar) ---
   return (
-    <main className="flex h-screen bg-white text-[#1f1f1f] overflow-hidden relative">
-      
-      {/* Sidebar avec les nouvelles props de navigation */}
-      <div className={`${isSidebarOpen ? 'w-[280px]' : 'w-0'} transition-all duration-300 ease-in-out overflow-hidden h-full`}>
-        <Sidebar 
-          currentChatId={selectedChatId} 
-          onSelectChat={(id) => {
-            setSelectedChatId(id);
-            setView('chat'); // Repasse en mode chat si on clique sur un historique
-          }} 
-          setView={setView}
-          currentView={view}
-        />
+    <main className="flex h-screen bg-white overflow-hidden relative">
+      {/* Sidebar - Apparaît seulement ici */}
+      <div className={`${isSidebarOpen ? 'w-[280px]' : 'w-0'} transition-all duration-300 border-r border-gray-100 bg-white h-full overflow-hidden`}>
+        <Sidebar setView={setView} currentView={view} />
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0 relative">
-        
-        {/* Header Gemini-style */}
-        <header className="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              </svg>
-            </button>
-            <span className="text-xl font-medium tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 ml-2">
-              Toussyf-app AI
-            </span>
-          </div>
-          
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="h-16 flex items-center justify-between px-6 border-b border-gray-50">
           <div className="flex items-center gap-4">
-            <span className="hidden md:block text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-              {user.email}
-            </span>
-            <button onClick={() => supabase.auth.signOut()} className="text-gray-400 hover:text-red-500 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-              </svg>
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <button onClick={() => setView('hub')} className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors">
+                ← Retour au Hub
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+             <span className="text-xs font-bold">{user.email}</span>
+             <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold">
+                {user.email[0].toUpperCase()}
+             </div>
+             <button 
+              onClick={handleLogout}
+              className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-all"
+              title="Déconnexion"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+
             </button>
           </div>
         </header>
-        
-        {/* ZONE DE CONTENU CONDITIONNELLE */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
-          {view === 'chat' ? (
-            <div className="max-w-4xl mx-auto px-4 py-8 md:px-8">
-              {messages.length === 0 && !loading && (
-                <div className="mt-20 mb-12">
-                   <h2 className="text-4xl md:text-5xl font-medium text-gray-300">
-                     <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-red-400">
-                       Bonjour, {user.email?.split('@')[0]}
-                     </span><br />
-                     En quoi puis-je vous aider ?
-                   </h2>
-                </div>
-              )}
-              <ChatList messages={messages} loading={loading} />
-              {error && <div className="text-red-500 mt-4 italic">⚠️ {error}</div>}
-            </div>
-          ) : (
-            /* AFFICHAGE DU MODULE CARRIÈRE */
-            <CareerModule />
-          )}
-        </div>
 
-        {/* Footer (Barre de saisie) affiché seulement en mode CHAT */}
-        {view === 'chat' && (
-          <footer className="w-full pb-8 pt-2">
-            <div className="max-w-4xl mx-auto px-4">
-              <ChatInput onSendMessage={onSend} disabled={loading} />
-              <p className="text-[11px] text-center mt-4 text-gray-400 font-light">
-                Chat-app AI peut afficher des informations inexactes.
-              </p>
-            </div>
-          </footer>
-        )}
+        <div className="flex-1 overflow-y-auto">
+          {view === 'career' && <CareerModule />}
+          {view === 'chat' && <ChatModule />}
+          {view === 'builder' && <ResumeBuilder />}
+        </div>
       </div>
     </main>
   );
