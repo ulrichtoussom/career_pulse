@@ -18,7 +18,7 @@ const DEFAULT_SECTION_TITLES = {
   projects: 'Projets'
 };
 
-export default function ResumeForm({ data, setData }) {
+export default function ResumeForm({ data, setData, sectionTitles, setSectionTitles }) {
   const [expandedSections, setExpandedSections] = useState({
     basics: true,
     profiles: true,
@@ -34,8 +34,6 @@ export default function ResumeForm({ data, setData }) {
     references: false,
     projects: false
   });
-
-  const [sectionTitles, setSectionTitles] = useState(DEFAULT_SECTION_TITLES);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({

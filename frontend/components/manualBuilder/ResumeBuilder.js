@@ -6,6 +6,22 @@ import ResumePreview from './ResumePreview';
 import TemplateSelector from './TemplateSelector';
 import { defaultLayout, templateLayouts, resumeTemplates } from '@/frontend/data/resumeTemplates';
 
+const DEFAULT_SECTION_TITLES = {
+  basics: 'Identité & Contact',
+  profiles: 'Profils & Réseaux',
+  work: 'Expérience Professionnelle',
+  volunteer: 'Bénévolat',
+  education: 'Formation',
+  awards: 'Distinctions',
+  certificates: 'Certifications',
+  publications: 'Publications',
+  skills: 'Compétences',
+  languages: 'Langues',
+  interests: 'Centres d\'Intérêt',
+  references: 'Références',
+  projects: 'Projets'
+};
+
 export default function ResumeBuilder() {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [activeTab, setActiveTab] = useState('content');
@@ -13,6 +29,7 @@ export default function ResumeBuilder() {
   const [layout, setLayout] = useState(defaultLayout);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [sectionTitles, setSectionTitles] = useState(DEFAULT_SECTION_TITLES);
 
   // Si pas de template sélectionné, afficher le sélecteur
   if (!selectedTemplate) {
@@ -62,7 +79,7 @@ export default function ResumeBuilder() {
         {/* CONTENU */}
         <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
           {activeTab === 'content' ? (
-            <ResumeForm data={resumeData} setData={setResumeData} />
+            <ResumeForm data={resumeData} setData={setResumeData} sectionTitles={sectionTitles} setSectionTitles={setSectionTitles} />
           ) : (
             <AppearanceSettings layout={layout} setLayout={setLayout} />
           )}
@@ -144,7 +161,7 @@ export default function ResumeBuilder() {
                 color: '#1f2937'
               }}
             >
-              {resumeData && <ResumePreview data={resumeData} layout={layout} />}
+              {resumeData && <ResumePreview data={resumeData} layout={layout} sectionTitles={sectionTitles} />}
             </div>
           </div>
         </div>
