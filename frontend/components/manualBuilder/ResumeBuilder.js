@@ -30,6 +30,22 @@ export default function ResumeBuilder() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [sectionTitles, setSectionTitles] = useState(DEFAULT_SECTION_TITLES);
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Fonction d'export PDF
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const { exportToPDF } = await import('@/frontend/utils/pdfExport');
+      const filename = `${resumeData.basics.name || 'resume'}.pdf`;
+      exportToPDF('resume-preview', filename);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Erreur lors de l\'export PDF');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Si pas de template sélectionné, afficher le sélecteur
   if (!selectedTemplate) {
@@ -142,13 +158,18 @@ export default function ResumeBuilder() {
               <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 hidden md:block">
                 Prévisualisation Directe
               </h3>
-              <button className="bg-gray-900 text-white px-4 md:px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all">
-                ⬇ PDF
+              <button 
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-4 md:px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg hover:shadow-xl"
+              >
+                {isExporting ? '⏳ Export...' : '⬇ Télécharger PDF'}
               </button>
             </div>
 
             {/* CV Preview - Responsive */}
             <div 
+              id="resume-preview"
               className="bg-white shadow-2xl mx-auto origin-top transition-all duration-300 rounded-lg"
               style={{
                 width: '100%',
