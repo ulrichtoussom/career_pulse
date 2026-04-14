@@ -24,7 +24,8 @@ export default function AuthPage() {
 
         try {
             if (mode === 'forgot') {
-                const redirectTo = `${window.location.origin}/auth/callback?next=/auth/reset-password`;
+                const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+                const redirectTo = `${siteUrl}/auth/callback?next=/auth/reset-password`;
                 const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
                 if (error) throw error;
                 setMessage({
@@ -60,10 +61,13 @@ export default function AuthPage() {
     };
 
     const handleOAuth = async (provider) => {
-        const currentOrigin = window.location.origin;
-        await supabase.auth.signInWithOAuth({ 
+        // On utilise NEXT_PUBLIC_SITE_URL (défini au build) plutôt que
+        // window.location.origin pour éviter que le proxy interne de Render
+        // (0.0.0.0:10000) ne contamine l'URL de redirection OAuth.
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+        await supabase.auth.signInWithOAuth({
             provider,
-            options: { redirectTo: `${currentOrigin}/auth/callback` }
+            options: { redirectTo: `${siteUrl}/auth/callback` }
         });
     };
 
