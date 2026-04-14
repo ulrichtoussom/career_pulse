@@ -11,7 +11,8 @@ export async function POST(req) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
-    const { session_id, message } = await req.json();
+    const { session_id, message, preferred_model } = await req.json();
+    const preferredProvider = preferred_model || 'auto';
     if (!session_id || !message?.trim()) {
         return NextResponse.json({ error: 'session_id et message sont requis.' }, { status: 400 });
     }
@@ -48,7 +49,7 @@ export async function POST(req) {
     const messagesForAI = [...pastMessages, { role: 'user', content: message }];
     let aiReply = '';
     try {
-        aiReply = await getChatResponse(messagesForAI, systemPrompt, 1024);
+        aiReply = await getChatResponse(messagesForAI, systemPrompt, 1024, preferredProvider);
     } catch (err) {
         return NextResponse.json({ error: "Erreur IA : " + err.message }, { status: 500 });
     }

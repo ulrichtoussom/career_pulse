@@ -12,6 +12,7 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState('hub');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('auto');
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -224,7 +225,12 @@ export default function Home() {
           : 'w-[280px] -translate-x-full md:translate-x-0 md:w-0'
         }
       `}>
-        <Sidebar setView={navigateTo} currentView={view} />
+        <Sidebar
+          setView={navigateTo}
+          currentView={view}
+          selectedModel={selectedModel}
+          onModelChange={setSelectedModel}
+        />
       </div>
 
       {/* Contenu principal */}
@@ -254,9 +260,9 @@ export default function Home() {
         </header>
 
         <div className="flex-1 overflow-y-auto min-h-0">
-          {view === 'career' && <CareerModule />}
-          {view === 'builder' && <ResumeBuilder />}
-          {view === 'chat' && <CoachModule />}
+          {view === 'career' && <CareerModule selectedModel={selectedModel} />}
+          {view === 'builder' && <ResumeBuilder selectedModel={selectedModel} />}
+          {view === 'chat' && <CoachModule selectedModel={selectedModel} />}
         </div>
       </div>
     </main>
