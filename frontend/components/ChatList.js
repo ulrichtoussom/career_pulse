@@ -16,7 +16,7 @@ export default function ChatList({ messages, loading }) {
   };
 
   return (
-    <div className="space-y-8 pb-4">
+    <div className="space-y-4 md:space-y-6 pb-4">
       {messages.map((msg, index) => (
         <div
           key={msg.id || index}
@@ -40,7 +40,7 @@ export default function ChatList({ messages, loading }) {
             {/* Contenu du message */}
             <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
               <div
-                className={`text-base leading-relaxed ${
+                className={`text-sm md:text-base leading-relaxed ${
                   msg.role === 'user'
                     ? 'bg-[#f0f4f9] text-gray-800 px-5 py-3 rounded-[24px] rounded-tr-none'
                     : 'text-[#1f1f1f] pt-1'

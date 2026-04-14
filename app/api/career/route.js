@@ -100,6 +100,12 @@ export async function POST(req) {
             throw new Error("L'IA a renvoyé un format invalide après 3 tentatives de nettoyage.");
         }
 
+        // Normaliser cover_letter -> letter pour un stockage cohérent
+        const normalizedData = {
+            ...structuredData,
+            letter: structuredData.cover_letter || structuredData.letter || "",
+        };
+
         // Sauvegarde Supabase
         const { data, error: dbError } = await supabase
             .from('career_profiles')
@@ -107,7 +113,7 @@ export async function POST(req) {
                 user_id: user.id,
                 job_description: safeJobDescription || "Démo / Spontanée",
                 user_raw_profile: fullContext.substring(0, 3000),
-                structured_data: structuredData
+                structured_data: normalizedData
             }])
             .select().single();
 

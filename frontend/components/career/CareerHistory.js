@@ -72,7 +72,7 @@ export default function CareerHistory({ onSelect }) {
         return(
             <div key={item.id} className="group relative">
                 <button
-                    onClick={() => onSelect(item.structured_data)}
+                    onClick={() => onSelect(item)}
                     className="w-full text-left p-3 rounded-xl border border-gray-100 bg-white hover:border-blue-300 hover:shadow-sm transition-all pr-10"
                 >
                     <p className="text-[10px] font-bold text-gray-700 truncate group-hover:text-blue-600">

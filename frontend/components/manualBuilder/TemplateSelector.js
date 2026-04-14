@@ -5,10 +5,12 @@ import { useState } from 'react';
 
 export default function TemplateSelector({ onSelect }) {
   const [showImport, setShowImport] = useState(false);
+  const [importedData, setImportedData] = useState(null);
 
   const handleImportCV = (parsedData) => {
-    // Sélectionner le premier template par défaut pour l'import
-    onSelect('modernBlue', parsedData);
+    // Stocker les données importées et laisser l'utilisateur choisir son template
+    setImportedData(parsedData);
+    setShowImport(false);
   };
 
   return (
@@ -46,6 +48,34 @@ export default function TemplateSelector({ onSelect }) {
           </div>
         )}
 
+        {importedData && (
+          <div className="mb-8 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">✅</span>
+              <div>
+                <p className="text-sm font-black text-emerald-800">
+                  CV importé : {importedData.basics?.name || 'CV'}
+                </p>
+                <p className="text-xs text-emerald-600 mt-0.5">
+                  {importedData.work?.length || 0} expérience(s) · {importedData.education?.length || 0} formation(s) · {importedData.skills?.length || 0} compétence(s)
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setImportedData(null)}
+              className="text-xs text-emerald-600 hover:text-emerald-800 font-bold"
+            >
+              ✕ Effacer
+            </button>
+          </div>
+        )}
+
+        {importedData && (
+          <p className="text-center text-sm font-bold text-slate-600 mb-6">
+            Choisissez maintenant votre template — votre CV sera prérempli automatiquement
+          </p>
+        )}
+
         {!showImport && (
           <>
             {/* GRID TEMPLATES */}
@@ -53,7 +83,7 @@ export default function TemplateSelector({ onSelect }) {
               {Object.entries(resumeTemplates).map(([key, template]) => (
                 <button
                   key={key}
-                  onClick={() => onSelect(key, template.data)}
+                  onClick={() => onSelect(key, importedData || template.data)}
                   className="group relative overflow-hidden rounded-3xl bg-white border-2 border-gray-100 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 text-left"
                 >
                   {/* Background effect */}

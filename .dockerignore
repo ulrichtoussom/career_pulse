@@ -1,8 +1,38 @@
-.env*
-npm-debug.log
+# Dépendances (réinstallées dans le conteneur)
 node_modules
+npm-debug.log*
+
+# Build Next.js (reconstruit dans le conteneur)
 .next
 out
 build
-.git
+
+# Variables d'environnement (injectées via docker-compose args)
+.env
+.env.*
 .env.local
+
+# Git
+.git
+.gitignore
+
+# Fichiers de dev / docs
+*.md
+*.txt
+images/
+prompt.md
+ARCHITECTURE.md
+DEBUG_FOCUS_ISSUE.md
+ISSUE.md
+README_DESIGN_DOCS.md
+START_HERE.md
+
+# Éditeur / OS
+.DS_Store
+.vscode
+*.log
+
+# Prisma local uniquement (DB = Supabase en production)
+# Ne PAS exclure backend/ — les API routes importent depuis @/backend/lib, /prompts, /services, /utils
+backend/prisma/
+backend/data/

@@ -16,7 +16,7 @@ export default function ChatInput({ onSendMessage, disabled }) {
     <div className="relative w-full">
       <form 
         onSubmit={handleSubmit} 
-        className="group relative flex items-center bg-[#f0f4f9] hover:bg-[#e9eef6] focus-within:bg-white focus-within:shadow-lg focus-within:ring-1 focus-within:ring-gray-200 transition-all duration-200 rounded-[32px] px-6 py-3 min-h-[64px]"
+        className="group relative flex items-center bg-[#f0f4f9] hover:bg-[#e9eef6] focus-within:bg-white focus-within:shadow-lg focus-within:ring-1 focus-within:ring-gray-200 transition-all duration-200 rounded-[24px] md:rounded-[32px] px-4 py-2 md:px-6 md:py-3 min-h-[52px] md:min-h-[64px]"
       >
         <input
           type="text"
@@ -24,7 +24,7 @@ export default function ChatInput({ onSendMessage, disabled }) {
           onChange={(e) => setText(e.target.value)}
           disabled={disabled}
           placeholder="Entrez une invite ici"
-          className="flex-1 bg-transparent border-none outline-none text-gray-800 text-lg placeholder-gray-500 disabled:opacity-50"
+          className="flex-1 bg-transparent border-none outline-none text-gray-800 text-sm md:text-base placeholder-gray-500 disabled:opacity-50"
         />
 
         <div className="flex items-center gap-2 ml-4">

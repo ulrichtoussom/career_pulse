@@ -49,7 +49,7 @@ export default function AppearanceSettings({ layout, setLayout, currentTemplate,
                 onToggle={() => toggleSection('templates')}
             >
                 <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {resumeTemplates && resumeTemplates.map((t) => (
+                    {resumeTemplates && Object.values(resumeTemplates).map((t) => (
                         <button
                             key={t.name}
                             onClick={() => setTemplate(t.layout)}
@@ -265,12 +265,7 @@ function CollapsibleSection({ title, isExpanded, onToggle, children }) {
                 <span className="text-xs font-black uppercase tracking-widest text-gray-900">
                     {title}
                 </span>
-                <svg 
-                    className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
+                <span className={`text-lg transition-transform flex-shrink-0 ml-2 ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
             </button>
             {isExpanded && (
                 <div className="px-4 py-4 border-t border-gray-100 bg-gray-50/50">

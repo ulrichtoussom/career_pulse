@@ -210,9 +210,42 @@ export default function ResumeForm({ data, setData, sectionTitles, setSectionTit
                   <textarea placeholder="Description de vos missions..." className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-xs outline-none focus:border-blue-300 h-20 resize-none"
                     value={job.summary} onChange={(e) => updateItem('work', index, 'summary', e.target.value)} />
                   <div className="mt-3">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block">Points clés (un par ligne)</label>
-                    <textarea placeholder="Accomplissement 1&#10;Accomplissement 2" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-xs outline-none focus:border-blue-300 h-16 resize-none"
-                      value={job.highlights?.join('\n') || ''} onChange={(e) => updateArrayField('work', index, 'highlights', e.target.value)} />
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block">Points clés</label>
+                    <div className="space-y-2">
+                      {(job.highlights || []).map((bullet, bIdx) => (
+                        <div key={bIdx} className="flex gap-2 items-center">
+                          <span className="text-blue-400 flex-shrink-0 text-xs">▸</span>
+                          <input
+                            type="text"
+                            value={bullet}
+                            onChange={(e) => {
+                              const newH = [...(job.highlights || [])];
+                              newH[bIdx] = e.target.value;
+                              updateItem('work', index, 'highlights', newH);
+                            }}
+                            className="flex-1 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs outline-none focus:border-blue-300"
+                            placeholder="Accomplissement..."
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newH = (job.highlights || []).filter((_, i) => i !== bIdx);
+                              updateItem('work', index, 'highlights', newH);
+                            }}
+                            className="text-gray-300 hover:text-red-500 text-xs font-bold"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => updateItem('work', index, 'highlights', [...(job.highlights || []), ''])}
+                        className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:opacity-70 mt-1"
+                      >
+                        + Ajouter un point
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -595,12 +628,12 @@ function FormSection({ title, section, children, expanded, onToggle, onTitleChan
 
   return (
     <section className="border border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors group">
+      <div className="flex items-center px-6 py-4 hover:bg-gray-50 transition-colors group">
         <button
           onClick={() => onToggle(section)}
-          className="flex items-center gap-2 flex-1 text-left"
+          className="flex items-center justify-between flex-1 text-left gap-2 min-w-0"
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             {isEditingTitle ? (
               <input
                 autoFocus
@@ -620,17 +653,12 @@ function FormSection({ title, section, children, expanded, onToggle, onTitleChan
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
-              <h3 className="text-sm font-black uppercase tracking-[0.3em] text-gray-900">
+              <h3 className="text-sm font-black uppercase tracking-[0.3em] text-gray-900 truncate">
                 {title}
               </h3>
             )}
           </div>
-          <svg 
-            className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
-            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
+          <span className={`text-sm flex-shrink-0 text-gray-400 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>▼</span>
         </button>
         {!isEditingTitle && (
           <button
@@ -639,7 +667,7 @@ function FormSection({ title, section, children, expanded, onToggle, onTitleChan
               setIsEditingTitle(true);
               setTempTitle(title);
             }}
-            className="p-1 text-gray-300 hover:text-gray-600 rounded opacity-0 group-hover:opacity-100 ml-2"
+            className="p-1 text-gray-300 hover:text-gray-600 rounded opacity-0 group-hover:opacity-100 ml-2 flex-shrink-0"
             title="Éditer le titre"
           >
             ✏️
