@@ -84,7 +84,7 @@ export default function Sidebar({ setView, currentView, selectedModel, onModelCh
   const activeModel = AI_MODELS.find((m) => m.id === selectedModel) ?? AI_MODELS[0];
 
   return (
-    <aside className="w-[280px] bg-[#f0f4f9] h-full flex flex-col p-4 transition-all duration-300">
+    <aside className="w-full bg-[#f0f4f9] h-full flex flex-col p-4 overflow-y-auto">
 
       {/* ── NAVIGATION ── */}
       <div className="mb-6 space-y-1">

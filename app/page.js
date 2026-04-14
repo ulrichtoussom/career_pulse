@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/frontend/lib/supabaseClient'
 import Sidebar from '@/frontend/components/Sidebar';
 import CareerModule from '@/frontend/components/CareerModule';
@@ -13,6 +13,39 @@ export default function Home() {
   const [view, setView] = useState('hub');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState('auto');
+
+  // ── Sidebar resize ──────────────────────────────────────────
+  const SIDEBAR_MIN = 200;
+  const SIDEBAR_MAX = 480;
+  const SIDEBAR_DEFAULT = 280;
+  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT);
+  const isResizing = useRef(false);
+
+  const startResize = (e) => {
+    isResizing.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
+
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (!isResizing.current) return;
+      const newWidth = Math.min(Math.max(e.clientX, SIDEBAR_MIN), SIDEBAR_MAX);
+      setSidebarWidth(newWidth);
+    };
+    const onMouseUp = () => {
+      if (!isResizing.current) return;
+      isResizing.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -214,23 +247,40 @@ export default function Home() {
         />
       )}
 
-      {/* Sidebar — mobile: tiroir fixe, desktop: inline */}
-      <div className={`
-        fixed md:static top-0 bottom-0 left-0
-        z-50 md:z-auto h-full
-        transition-all duration-300
-        border-r border-gray-100 bg-white overflow-hidden shrink-0
-        ${isSidebarOpen
-          ? 'w-[280px] translate-x-0 shadow-2xl md:shadow-none'
-          : 'w-[280px] -translate-x-full md:translate-x-0 md:w-0'
-        }
-      `}>
+      {/* Sidebar — mobile: tiroir fixe, desktop: redimensionnable */}
+      <div
+        className={`
+          fixed md:static top-0 bottom-0 left-0
+          z-50 md:z-auto h-full
+          border-r border-gray-100 bg-white overflow-hidden shrink-0
+          ${isSidebarOpen
+            ? 'translate-x-0 shadow-2xl md:shadow-none'
+            : '-translate-x-full md:translate-x-0'
+          }
+        `}
+        style={{ width: sidebarWidth }}
+      >
         <Sidebar
           setView={navigateTo}
           currentView={view}
           selectedModel={selectedModel}
           onModelChange={setSelectedModel}
         />
+      </div>
+
+      {/* Poignée de redimensionnement — desktop uniquement */}
+      <div
+        onMouseDown={startResize}
+        className="hidden md:flex items-center justify-center w-1 shrink-0 cursor-col-resize group relative z-10"
+        title="Glisser pour redimensionner"
+      >
+        <div className="w-0.5 h-full bg-gray-100 group-hover:bg-blue-400 transition-colors" />
+        {/* Indicateur visuel centré */}
+        <div className="absolute top-1/2 -translate-y-1/2 w-3 h-6 flex flex-col items-center justify-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="w-0.5 h-1.5 bg-blue-400 rounded-full" />
+          <div className="w-0.5 h-1.5 bg-blue-400 rounded-full" />
+          <div className="w-0.5 h-1.5 bg-blue-400 rounded-full" />
+        </div>
       </div>
 
       {/* Contenu principal */}
