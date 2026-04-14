@@ -11,6 +11,11 @@ services:
         # Variables serveur (non exposées au client)
         SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
         GROQ_API_KEY: ${GROQ_API_KEY}
+        # AI Gateway — providers de fallback (laisser vide pour désactiver)
+        ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+        OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+        GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+        AI_PROVIDER_ORDER: ${AI_PROVIDER_ORDER:-groq,claude,openai,gemini}
 
     container_name: careerpulse-app
 
@@ -23,6 +28,11 @@ services:
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
       GROQ_API_KEY: ${GROQ_API_KEY}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      # AI Gateway
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AI_PROVIDER_ORDER: ${AI_PROVIDER_ORDER:-groq,claude,openai,gemini}
 
     # Healthcheck : vérifie que l'app répond bien avant de la considérer "healthy"
     healthcheck:

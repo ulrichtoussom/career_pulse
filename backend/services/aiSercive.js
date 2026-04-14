@@ -1,62 +1,53 @@
-// backend/services/aiService.js
-import Groq from "groq-sdk";
+/**
+ * backend/services/aiSercive.js
+ *
+ * Interface publique conservée à l'identique pour ne pas modifier les routes API.
+ * Les appels sont maintenant routés via aiGateway qui gère le fallback multi-provider.
+ */
 
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY
-});
+import aiGateway from './aiGateway.js';
 
 /**
- * Multi-turn chat: accepts a history of messages + system prompt.
- * Used by the IA Career Coach module.
+ * Multi-turn chat : accepte un historique de messages + system prompt.
+ * Utilisé par le module IA Career Coach.
+ *
+ * @param {Array<{role: string, content: string}>} messages - historique de la conversation
+ * @param {string} systemPrompt
+ * @param {number} maxTokens
+ * @returns {Promise<string>}
  */
 export async function getChatResponse(messages, systemPrompt, maxTokens = 1024) {
+    const fullMessages = [
+        { role: 'system', content: systemPrompt },
+        ...messages,
+    ];
+
     try {
-        const chatCompletion = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-                { role: "system", content: systemPrompt },
-                ...messages,
-            ],
-            temperature: 0.7,
-            max_tokens: maxTokens,
-            top_p: 0.95,
-        });
-        return chatCompletion.choices[0]?.message?.content || "Désolé, je n'ai pas pu générer une réponse.";
+        return await aiGateway.complete(fullMessages, { maxTokens, temperature: 0.7, topP: 0.95 });
     } catch (error) {
-        console.error("ERREUR GROQ CHAT:", error.status, error.message);
-        throw error;
+        console.error('[aiSercive] getChatResponse — tous les providers ont échoué:', error.message);
+        return "Désolé, je n'ai pas pu générer une réponse. Veuillez réessayer dans quelques instants.";
     }
 }
 
-export async function getAIResponse(userMessage, systemPrompt) { // Ajoute systemPrompt en argument
-    
+/**
+ * Requête simple : un message utilisateur + system prompt.
+ * Utilisé par le générateur de CV IA et le builder.
+ *
+ * @param {string} userMessage
+ * @param {string} systemPrompt
+ * @returns {Promise<string>}
+ */
+export async function getAIResponse(userMessage, systemPrompt) {
+    const messages = [
+        { role: 'system', content: systemPrompt || 'Tu es un expert en recrutement.' },
+        { role: 'user', content: userMessage },
+    ];
+
     try {
-        // Log de vérification (à retirer en production)
-        console.log("Appel Groq avec le modèle 70b...")
-
-        const chatCompletion = await groq.chat.completions.create({
-            
-            // On peut essayer le 70b si le 8b est trop "feignant"
-            model: "llama-3.3-70b-versatile", 
-            messages: [
-                {
-                    role: "system",
-                    content: systemPrompt || "Tu es un expert en recrutement."
-                },
-                {
-                    role: "user",
-                    content: userMessage
-                }
-            ],
-            temperature: 0.6, 
-            max_tokens: 4096, // CRUCIAL : On autorise une réponse longue
-            top_p: 0.95,      // Augmente la diversité du vocabulaire
-        });
-
-        return chatCompletion.choices[0]?.message?.content || "Je n'ai pas pu générer de réponse.";
+        return await aiGateway.complete(messages, { maxTokens: 4096, temperature: 0.6, topP: 0.95 });
     } catch (error) {
-        // C'est ici qu'on va voir le vrai problème (401, 413, 429...)
-        console.error("DÉTAIL ERREUR GROQ:", error.status, error.message);
-        throw error; // On renvoie l'erreur originale pour mieux debugger
+        console.error('[aiSercive] getAIResponse — tous les providers ont échoué:', error.message);
+        throw error;
     }
 }
