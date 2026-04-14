@@ -1,58 +1,109 @@
-// frontend/hooks/useChat.js
 import { useState, useEffect } from 'react';
+import { supabase } from '@/frontend/lib/supabaseClient'
 
-export function useChat() {
-    const [messages, setMessages] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+export function useChat(conversationId = null) {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-    // 1. Charger l'historique au démarrage
-    const fetchMessages = async () => {
-        try {
-            const res = await fetch('/api/chat');
-            const data = await res.json();
-            if (res.ok) setMessages(data);
-        } catch (err) {
-            setError("Impossible de charger les messages.");
-        }
+  useEffect(() => {
+    const fetchHistory = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Reset visuel immédiat si on passe sur une nouvelle discussion
+      if (!conversationId) {
+        setMessages([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) setError("Erreur lors du chargement de l'historique");
+      else setMessages(data);
     };
 
-    useEffect(() => {
-        fetchMessages();
-    }, []);
+    fetchHistory();
+  }, [conversationId]);
 
-    // 2. Fonction pour envoyer un message
-    const sendMessage = async (content) => {
-        if (!content.trim()) return;
+  const sendMessage = async (content) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) throw new Error("Non connecté.");
 
-        setLoading(true);
-        setError(null);
+      const user = session.user;
+      const token = session.access_token;
+      
+      let currentId = conversationId;
 
-        // Optimisme : on ajoute immédiatement le message de l'utilisateur à l'écran
-        const userMsg = { id: Date.now(), content, role: 'user', createdAt: new Date() };
-        setMessages((prev) => [...prev, userMsg]);
+      // 1. Si on est en mode "Nouvelle discussion", on crée la session d'abord
+      if (!currentId) {
+        const { data: newConv, error: convError } = await supabase
+          .from('conversations')
+          .insert([{ 
+            title: content.substring(0, 40) + "...", 
+            user_id: user.id 
+          }])
+          .select()
+          .single();
 
-        try {
-            const res = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content }),
-            });
+        if (convError) throw new Error("Erreur création session : " + convError.message);
+        currentId = newConv.id;
+      }
 
-            const aiMsg = await res.json();
+      // 2. Sauvegarde du message utilisateur
+      const { data: userMsg, error: dbError } = await supabase
+        .from('messages')
+        .insert([{ 
+          content, 
+          role: 'user', 
+          user_id: user.id,
+          conversation_id: currentId 
+        }])
+        .select()
+        .single();
 
-            if (res.ok) {
-                // On remplace ou on ajoute la réponse de l'IA
-                setMessages((prev) => [...prev, aiMsg]);
-            } else {
-                setError(aiMsg.error || "Une erreur est survenue");
-            }
-        } catch (err) {
-            setError("Erreur de connexion au serveur.");
-        } finally {
-            setLoading(false);
-        }
-    };
+      if (dbError) throw new Error("Erreur DB :" + dbError.message);
+      setMessages(prev => [...prev, userMsg]);
 
-    return { messages, sendMessage, loading, error };
+      // 3. Appel API
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ 
+          content, 
+          conversationId: currentId 
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "L'IA n'a pas pu répondre");
+      }
+
+      const aiData = await res.json();
+      setMessages(prev => [...prev, aiData]);
+
+      // TRÈS IMPORTANT : On retourne l'ID (qu'il soit nouveau ou ancien)
+      return currentId;
+
+    } catch (err) {
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { messages, sendMessage, loading, error };
 }

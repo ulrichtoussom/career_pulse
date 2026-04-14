@@ -1,42 +1,84 @@
+# ════════════════════════════════════════════════════════════════════
+# ÉTAPE 1 — Base commune (image légère Alpine)
+# ════════════════════════════════════════════════════════════════════
+FROM node:20-alpine AS base
 
-# 1. Image de base : on utilise Node.js version 20 (version légère Alpine)
-FROM node:20-alpine AS builder
+# ════════════════════════════════════════════════════════════════════
+# ÉTAPE 2 — Installation des dépendances
+# ════════════════════════════════════════════════════════════════════
+FROM base AS deps
 
-# 2. Définition du dossier de travail dans le conteneur
+# libc6-compat  : compatibilité glibc pour certains packages natifs
+# python3/make/g++ : requis pour compiler html2pdf.js et pdfjs-dist
+RUN apk add --no-cache libc6-compat python3 make g++
+
 WORKDIR /app
 
-# 3. Installation des dépendances
-# On copie d'abord les fichiers de configuration pour optimiser le cache Docker
-COPY package*.json ./
-RUN npm install
+COPY package.json package-lock.json ./
 
-# 4. Copie de tout le code source
+# npm ci : installation reproductible (respecte package-lock.json)
+RUN npm ci
+
+# ════════════════════════════════════════════════════════════════════
+# ÉTAPE 3 — Build Next.js
+# ════════════════════════════════════════════════════════════════════
+FROM base AS builder
+
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# 5. Préparation de Prisma
-# On génère le moteur de recherche (Client) Prisma pour l'OS du conteneur
-RUN npx prisma generate --schema=./backend/prisma/schema.prisma
+# Variables publiques injectées au BUILD TIME (préfixe NEXT_PUBLIC_)
+# Elles sont embarquées dans le bundle JS côté client
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_SITE_URL
 
-# 6. Build de l'application Next.js
+# Variables serveur uniquement (non exposées au client)
+ARG SUPABASE_SERVICE_ROLE_KEY
+ARG GROQ_API_KEY
+
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
+ENV GROQ_API_KEY=$GROQ_API_KEY
+ENV NEXT_TELEMETRY_DISABLED=1
+
 RUN npm run build
 
-# --- Étape de Production (pour réduire la taille de l'image) ---
-FROM node:20-alpine AS runner
+# ════════════════════════════════════════════════════════════════════
+# ÉTAPE 4 — Runner de production (image finale minimale)
+# Grâce à output:'standalone' dans next.config.mjs,
+# .next/standalone contient un serveur Node.js complet sans node_modules
+# ════════════════════════════════════════════════════════════════════
+FROM base AS runner
+
 WORKDIR /app
 
-# On définit l'environnement sur production
-ENV NODE_ENV production
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# On ne copie que le strict nécessaire depuis l'étape de build
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/.next ./.next
+# Sécurité : utilisateur non-root
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Fichiers statiques publics
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/backend/prisma ./backend/prisma
-COPY --from=builder /app/data ./data
 
-# 7. Exposition du port utilisé par Next.js
+# Serveur autonome généré par Next.js standalone
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+
+# Assets statiques (CSS, JS, images du build)
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
 EXPOSE 3000
 
-# Remplace la dernière ligne CMD par celle-ci :
-CMD npx prisma migrate deploy --schema=./backend/prisma/schema.prisma && npm start
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# server.js est généré par Next.js dans le dossier standalone
+CMD ["node", "server.js"]

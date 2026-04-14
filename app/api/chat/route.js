@@ -1,58 +1,62 @@
-// app/api/chat/route.js
-import { NextResponse } from 'next/server';
-import { prisma } from '@/backend/lib/prisma';
 import { getAIResponse } from '@/backend/services/aiSercive';
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
-/**
- * ✅ Récupérer l'historique des messages
- */
-export async function GET() {
+export async function POST(req) {
+    const authHeader = req.headers.get('Authorization')
+    const token = authHeader?.split(' ')[1]
+
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY,
+        {
+            cookies: {
+                getAll() { return [] }, 
+            },
+        }
+    )
+
     try {
-        const messages = await prisma.message.findMany({
-            orderBy: { createdAt: 'asc' }
-        });
-        return NextResponse.json(messages);
-    } catch (error) {
-        return NextResponse.json({ error: "Erreur lors de la récupération" }, { status: 500 });
-    }
-}
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
 
-/**
- * ✅ Envoyer un message et obtenir une réponse de l'IA
- */
-export async function POST(request) {
-    try {
-        const { content } = await request.json();
-
-        // 1. Validation simple
-        if (!content || content.trim() === "") {
-            return NextResponse.json({ error: "Le message ne peut pas être vide" }, { status: 400 });
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
         }
 
-        // 2. Enregistrement du message utilisateur (role: 'user')
-        await prisma.message.create({
-            data: {
-                content: content,
-                role: 'user'
-            }
-        });
+        // On récupère content ET conversationId depuis le corps de la requête
+        const { content, conversationId } = await req.json()
 
-        // 3. Appel au service IA (Groq)
+        if (!conversationId) {
+            return NextResponse.json({ error: 'ID de conversation manquant' }, { status: 400 })
+        }
+
+        // 1. Obtenir la réponse de l'IA
         const aiResponse = await getAIResponse(content);
 
-        // 4. Enregistrement de la réponse IA (role: 'assistant')
-        const savedAiMsg = await prisma.message.create({
-            data: {
-                content: aiResponse,
-                role: 'assistant'
-            }
-        });
+        // 2. Sauvegarder la réponse de l'IA liée à la conversation
+        const { data: aiMsg, error: dbError } = await supabase
+            .from('messages')
+            .insert([
+                { 
+                    content: aiResponse, 
+                    role: 'assistant', 
+                    user_id: user.id,
+                    conversation_id: conversationId // <--- Liaison cruciale ici
+                }
+            ])
+            .select()
+            .single();
 
-        // On renvoie la réponse de l'IA au frontend pour affichage immédiat
-        return NextResponse.json(savedAiMsg);
+        if (dbError) {
+            console.error("Erreur insertion DB (IA):", dbError);
+            throw dbError;
+        }
+
+        return NextResponse.json(aiMsg)
 
     } catch (error) {
-        console.error("Erreur API Chat:", error);
-        return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 });
+        console.error("Erreur API Chat:", error.message);
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

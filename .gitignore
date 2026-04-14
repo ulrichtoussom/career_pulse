@@ -1,6 +1,6 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# ── Dépendances ──────────────────────────────────────────────────────
 /node_modules
 /.pnp
 .pnp.*
@@ -10,32 +10,70 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
-
-# next.js
+# ── Build Next.js ────────────────────────────────────────────────────
 /.next/
 /out/
-
-# production
 /build
+*.tsbuildinfo
+next-env.d.ts
 
-# misc
+# ── Variables d'environnement (clés API, secrets) ────────────────────
+.env
+.env.*
+.env.local
+.env.production
+
+# ── Base de données locale (SQLite / Prisma) ─────────────────────────
+backend/data/
+*.db
+*.sqlite
+
+# ── Config locale Claude Code ────────────────────────────────────────
+.claude/
+
+# ── Fichiers de debug / screenshots ──────────────────────────────────
+images/
+
+# ── Fichiers sensibles / structure BDD ───────────────────────────────
+supabase_migration_coach.sql
+
+# ── Fichiers temporaires et brouillons ───────────────────────────────
+anotherfiledocker.txt
+zTest.js
+prompt.md
+
+# ── Docs internes de développement (non pertinentes pour les contributeurs) ──
+START_HERE.md
+CHANGELIST.md
+IMPORT_EXPORT_FEATURE.md
+REFONTE_CV_BUILDER.md
+TEMPLATES_PREMIUM.md
+roadMap.md
+ARCHITECTURE.md
+DEBUG_FOCUS_ISSUE.md
+ISSUE.md
+README_DESIGN_DOCS.md
+
+# ── Système d'exploitation ───────────────────────────────────────────
 .DS_Store
-*.pem
+Thumbs.db
 
-# debug
+# ── Éditeurs ─────────────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+
+# ── Logs ─────────────────────────────────────────────────────────────
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
-# env files (can opt-in for committing if needed)
-.env*
+# ── Certificats ──────────────────────────────────────────────────────
+*.pem
 
-# vercel
+# ── Tests ────────────────────────────────────────────────────────────
+/coverage
+
+# ── Déploiement ──────────────────────────────────────────────────────
 .vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts

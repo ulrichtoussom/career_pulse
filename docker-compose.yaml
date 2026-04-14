@@ -1,0 +1,35 @@
+services:
+  careerpulse:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Variables injectées au BUILD TIME dans le bundle Next.js
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        # Variables serveur (non exposées au client)
+        SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+        GROQ_API_KEY: ${GROQ_API_KEY}
+
+    container_name: careerpulse-app
+
+    ports:
+      - "3000:3000"
+
+    # Variables d'environnement runtime (disponibles côté serveur uniquement)
+    environment:
+      NODE_ENV: production
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+
+    # Healthcheck : vérifie que l'app répond bien avant de la considérer "healthy"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+    restart: unless-stopped
