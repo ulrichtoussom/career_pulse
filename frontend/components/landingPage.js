@@ -366,7 +366,7 @@ export default function LandingPage() {
           </div>
 
           <p className="text-xs text-slate-400 font-medium text-center">
-            © 2026 CareerPulse — Conçu par Ulrich Toussom · Montpellier, France
+            © 2026 CareerPulse — Conçu par Ulrich Toussom · Angleterre, London
           </p>
 
           <div className="flex items-center gap-6">
@@ -375,6 +375,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+        
 
     </div>
   );
