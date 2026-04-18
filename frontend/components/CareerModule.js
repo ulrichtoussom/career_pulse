@@ -1,5 +1,5 @@
 // components/CareerModule.js
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/frontend/lib/supabaseClient'
 
 // Imports des sous-composants
@@ -25,6 +25,41 @@ export const adjustBrightness = (hex, amt) => {
 };
 
 export default function CareerModule() {
+
+    // ── Resize panneau formulaire / aperçu ─────────────────────
+    // On manipule le DOM directement via ref pour éviter tout problème
+    // de détection de taille d'écran (SSR) et pour de meilleures perfs.
+    const FORM_MIN       = 260;
+    const FORM_MAX       = 600;
+    const formColRef     = useRef(null);
+    const isResizingForm = useRef(false);
+
+    const startFormResize = () => {
+        isResizingForm.current         = true;
+        document.body.style.cursor     = 'col-resize';
+        document.body.style.userSelect = 'none';
+    };
+
+    useEffect(() => {
+        const onMove = (e) => {
+            if (!isResizingForm.current || !formColRef.current) return;
+            const containerLeft = formColRef.current.parentElement.getBoundingClientRect().left;
+            const newWidth = Math.min(Math.max(e.clientX - containerLeft, FORM_MIN), FORM_MAX);
+            formColRef.current.style.width = `${newWidth}px`;
+        };
+        const onUp = () => {
+            if (!isResizingForm.current) return;
+            isResizingForm.current         = false;
+            document.body.style.cursor     = '';
+            document.body.style.userSelect = '';
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup',   onUp);
+        return () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup',   onUp);
+        };
+    }, []);
 
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
@@ -162,10 +197,13 @@ export default function CareerModule() {
             <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
 
                 {/* COLONNE GAUCHE (Formulaire + Historique) */}
-                <div className={`
-                    ${mobileView === 'form' ? 'flex' : 'hidden'} md:flex
-                    w-full md:w-[350px] flex-shrink-0 bg-white border-r flex-col overflow-hidden shadow-sm z-10
-                `}>
+                <div
+                    ref={formColRef}
+                    className={`
+                        ${mobileView === 'form' ? 'flex' : 'hidden'} md:flex
+                        w-full md:w-[350px] shrink-0 bg-white border-r flex-col overflow-hidden shadow-sm z-10
+                    `}
+                >
                     <CareerHistory onSelect={(item) => {
                         // item = full DB row { id, structured_data, ... }
                         const raw = item.structured_data || item;
@@ -191,6 +229,21 @@ export default function CareerModule() {
                             fileName={fileName}
                             setFileName={setFileName}
                         />
+                    </div>
+                </div>
+
+                {/* POIGNÉE resize — desktop uniquement */}
+                <div
+                    onMouseDown={startFormResize}
+                    className="hidden md:flex items-center justify-center w-2 shrink-0
+                        cursor-col-resize group relative z-10"
+                >
+                    <div className="w-px h-full bg-gray-100 group-hover:bg-blue-400 transition-colors" />
+                    <div className="absolute top-1/2 -translate-y-1/2 flex flex-col gap-1
+                        opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-1 h-1 bg-blue-400 rounded-full" />
+                        <div className="w-1 h-1 bg-blue-400 rounded-full" />
+                        <div className="w-1 h-1 bg-blue-400 rounded-full" />
                     </div>
                 </div>
 

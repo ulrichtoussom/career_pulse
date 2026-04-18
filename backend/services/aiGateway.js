@@ -199,11 +199,30 @@ const aiGateway = {
      * Bascule automatiquement vers le prochain provider si le courant échoue.
      *
      * @param {Array<{role: string, content: string}>} messages
-     * @param {Object} options  { temperature, maxTokens, topP }
+     * @param {Object} options  { temperature, maxTokens, topP, preferredProvider }
+     *   preferredProvider: 'auto' | 'groq' | 'claude' | 'openai' | 'gemini'
+     *   Si défini et disponible, ce provider est tenté en premier.
+     *   En cas d'échec sur quota/dispo, le fallback automatique prend le relais.
      * @returns {Promise<string>}
      */
     async complete(messages, options = {}) {
-        const providers = getOrderedProviders();
+        const { preferredProvider } = options;
+        const completionOptions = { ...options };
+        delete completionOptions.preferredProvider;
+
+        let providers = getOrderedProviders();
+
+        // Si l'utilisateur a choisi un provider spécifique (≠ 'auto'),
+        // on le met en tête de liste (s'il est disponible), puis les autres suivent en fallback.
+        if (preferredProvider && preferredProvider !== 'auto') {
+            const preferred = ALL_PROVIDERS[preferredProvider];
+            if (preferred?.isAvailable()) {
+                providers = [
+                    preferred,
+                    ...providers.filter((p) => p !== preferred),
+                ];
+            }
+        }
 
         if (providers.length === 0) {
             throw new Error(
@@ -216,7 +235,7 @@ const aiGateway = {
         for (const provider of providers) {
             try {
                 console.log(`[AI Gateway] Tentative via ${provider.name}...`);
-                const result = await provider.complete(messages, options);
+                const result = await provider.complete(messages, completionOptions);
                 console.log(`[AI Gateway] Succès via ${provider.name}`);
                 return result;
             } catch (error) {

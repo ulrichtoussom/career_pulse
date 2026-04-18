@@ -1,6 +1,14 @@
 # CareerPulse
 
+[![Live](https://img.shields.io/badge/Live-chaweb.onrender.com-blue?style=flat-square)](https://chaweb.onrender.com)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](./LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](./CONTRIBUTING.md)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org)
+[![Supabase](https://img.shields.io/badge/Supabase-Auth%20%2B%20DB-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com)
+
 CareerPulse is a full-stack AI-powered career platform built with Next.js and Supabase. It helps professionals create tailored CVs, prepare for job interviews, and get personalized career coaching — all in one place.
+
+> **Active development on branch [`session_messages`](https://github.com/ulrichtoussom/career_pulse/tree/session_messages).** Contributors welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ---
 
@@ -284,12 +292,19 @@ All imports use the `@/` alias mapped to the project root (`jsconfig.json`). Exa
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feat/your-feature`
-3. Commit your changes
-4. Push and open a Pull Request against `session_messages`
+We're actively looking for contributors at all levels. Whether you want to fix a bug, build a feature, or improve the docs — you're welcome here.
 
-Code style: JavaScript (no TypeScript), Tailwind CSS for styling, async/await throughout, Next.js App Router conventions.
+See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for the full guide including Good First Issues (beginner → advanced), code style, and branch strategy.
+
+Quick start:
+```bash
+git clone https://github.com/ulrichtoussom/career_pulse.git
+cd career_pulse
+git checkout session_messages
+npm install && npm run dev
+```
+
+Open PRs against `session_messages` — not `main`.
 
 ---
 

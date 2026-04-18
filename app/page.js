@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/frontend/lib/supabaseClient'
 import Sidebar from '@/frontend/components/Sidebar';
 import CareerModule from '@/frontend/components/CareerModule';
@@ -11,7 +11,54 @@ import CoachModule from '@/frontend/components/iaCareerCoach/CoachModule';
 export default function Home() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState('hub');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('auto');
+
+  // ── Sidebar : états séparés mobile / desktop ────────────────
+  // Mobile  → tiroir fixe, géré par translate-x (isMobileOpen)
+  // Desktop → colonne inline, géré par width    (isDesktopOpen)
+  const [isMobileOpen, setIsMobileOpen]   = useState(false);
+  const [isDesktopOpen, setIsDesktopOpen] = useState(true);
+
+  const SIDEBAR_MIN     = 200;
+  const SIDEBAR_MAX     = 480;
+  const SIDEBAR_DEFAULT = 280;
+  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT);
+  const isResizing = useRef(false);
+
+  // Le bouton hamburger toggle le bon état selon la taille de l'écran
+  const toggleSidebar = () => {
+    if (window.innerWidth >= 768) {
+      setIsDesktopOpen(o => !o);
+    } else {
+      setIsMobileOpen(o => !o);
+    }
+  };
+
+  const startResize = () => {
+    isResizing.current = true;
+    document.body.style.cursor    = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
+
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (!isResizing.current) return;
+      const newWidth = Math.min(Math.max(e.clientX, SIDEBAR_MIN), SIDEBAR_MAX);
+      setSidebarWidth(newWidth);
+    };
+    const onMouseUp = () => {
+      if (!isResizing.current) return;
+      isResizing.current = false;
+      document.body.style.cursor    = '';
+      document.body.style.userSelect = '';
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup',   onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup',   onMouseUp);
+    };
+  }, []);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -26,10 +73,10 @@ export default function Home() {
     window.location.href = "/";
   };
 
-  // Close sidebar on mobile when navigating
+  // Ferme uniquement le tiroir mobile lors de la navigation
   const navigateTo = (v) => {
     setView(v);
-    setIsSidebarOpen(false);
+    setIsMobileOpen(false);
   };
 
   if (!user) return <LandingPage />;
@@ -205,33 +252,59 @@ export default function Home() {
   return (
     <main className="flex h-screen bg-white overflow-hidden relative">
 
-      {/* Backdrop mobile — ferme la sidebar en tapant à côté */}
-      {isSidebarOpen && (
+      {/* ── MOBILE : backdrop + tiroir fixe ───────────────────── */}
+      {isMobileOpen && (
         <div
           className="md:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
-          onClick={() => setIsSidebarOpen(false)}
+          onClick={() => setIsMobileOpen(false)}
         />
       )}
-
-      {/* Sidebar — mobile: tiroir fixe, desktop: inline */}
-      <div className={`
-        fixed md:static top-0 bottom-0 left-0
-        z-50 md:z-auto h-full
-        transition-all duration-300
-        border-r border-gray-100 bg-white overflow-hidden shrink-0
-        ${isSidebarOpen
-          ? 'w-[280px] translate-x-0 shadow-2xl md:shadow-none'
-          : 'w-[280px] -translate-x-full md:translate-x-0 md:w-0'
-        }
-      `}>
-        <Sidebar setView={navigateTo} currentView={view} />
+      <div
+        className={`md:hidden fixed top-0 bottom-0 left-0 z-50 h-full
+          border-r border-gray-100 bg-white overflow-hidden shrink-0
+          transition-transform duration-300
+          ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}
+        style={{ width: SIDEBAR_DEFAULT }}
+      >
+        <Sidebar setView={navigateTo} currentView={view}
+          selectedModel={selectedModel} onModelChange={setSelectedModel} />
       </div>
+
+      {/* ── DESKTOP : colonne inline redimensionnable ──────────── */}
+      <div
+        className="hidden md:block h-full border-r border-gray-100 bg-white overflow-hidden shrink-0
+          transition-[width] duration-200"
+        style={{ width: isDesktopOpen ? sidebarWidth : 0 }}
+      >
+        {/* Contenu à largeur fixe pour éviter l'écrasement pendant l'animation */}
+        <div style={{ width: sidebarWidth }} className="h-full">
+          <Sidebar setView={navigateTo} currentView={view}
+            selectedModel={selectedModel} onModelChange={setSelectedModel} />
+        </div>
+      </div>
+
+      {/* Poignée resize — visible uniquement si sidebar desktop ouverte */}
+      {isDesktopOpen && (
+        <div
+          onMouseDown={startResize}
+          className="hidden md:flex items-center justify-center w-2 shrink-0
+            cursor-col-resize group relative z-10"
+        >
+          <div className="w-px h-full bg-gray-100 group-hover:bg-blue-400 transition-colors" />
+          <div className="absolute top-1/2 -translate-y-1/2 flex flex-col gap-1
+            opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="w-1 h-1 bg-blue-400 rounded-full" />
+            <div className="w-1 h-1 bg-blue-400 rounded-full" />
+            <div className="w-1 h-1 bg-blue-400 rounded-full" />
+          </div>
+        </div>
+      )}
 
       {/* Contenu principal */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-14 md:h-16 flex items-center justify-between px-4 md:px-6 border-b border-gray-50 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-gray-100 rounded-lg">
+            <button onClick={toggleSidebar} className="p-2 hover:bg-gray-100 rounded-lg">
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
             <button onClick={() => navigateTo('hub')} className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors">
@@ -254,9 +327,9 @@ export default function Home() {
         </header>
 
         <div className="flex-1 overflow-y-auto min-h-0">
-          {view === 'career' && <CareerModule />}
-          {view === 'builder' && <ResumeBuilder />}
-          {view === 'chat' && <CoachModule />}
+          {view === 'career' && <CareerModule selectedModel={selectedModel} />}
+          {view === 'builder' && <ResumeBuilder selectedModel={selectedModel} />}
+          {view === 'chat' && <CoachModule selectedModel={selectedModel} />}
         </div>
       </div>
     </main>

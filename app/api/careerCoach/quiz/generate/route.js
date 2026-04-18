@@ -11,7 +11,8 @@ export async function POST(req) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
-    const { session_id } = await req.json();
+    const { session_id, preferred_model } = await req.json();
+    const preferredProvider = preferred_model || 'auto';
     if (!session_id) return NextResponse.json({ error: 'session_id requis.' }, { status: 400 });
 
     // Récupérer la session
@@ -37,7 +38,8 @@ export async function POST(req) {
         rawResponse = await getChatResponse(
             [{ role: 'user', content: 'Génère le quiz de 15 questions.' }],
             prompt,
-            4096
+            4096,
+            preferredProvider
         );
     } catch (err) {
         return NextResponse.json({ error: "Erreur IA : " + err.message }, { status: 500 });

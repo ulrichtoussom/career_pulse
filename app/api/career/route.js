@@ -36,6 +36,7 @@ export async function POST(req) {
         const profile_summary = formData.get('profile_summary') || "";
         const job_description = formData.get('job_description') || "";
         const cvFile = formData.get('cv_file');
+        const preferredProvider = formData.get('preferred_model') || 'auto';
 
         let extractedText = "";
 
@@ -86,7 +87,7 @@ export async function POST(req) {
         console.log("Envoi à l'IA...");
         let aiRawResponse = ""
 
-        aiRawResponse = await getAIResponse("Génère le dossier complet en suivant strictement le format JSON.", systemPrompt);
+        aiRawResponse = await getAIResponse("Génère le dossier complet en suivant strictement le format JSON.", systemPrompt, preferredProvider);
 
         if(!aiRawResponse){
             throw new Error("L'IA a renvoyé une réponse vide");

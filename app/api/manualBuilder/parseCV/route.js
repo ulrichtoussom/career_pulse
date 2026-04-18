@@ -93,6 +93,7 @@ export async function POST(req) {
 
     const formData = await req.formData();
     const cvFile = formData.get('cv_file');
+    const preferredProvider = formData.get('preferred_model') || 'auto';
 
     if (!cvFile || cvFile.size === 0) {
         return NextResponse.json({ error: 'Aucun fichier fourni.' }, { status: 400 });
@@ -135,7 +136,8 @@ export async function POST(req) {
         aiResponse = await getChatResponse(
             [{ role: 'user', content: `Voici le texte brut du CV :\n\n${truncatedText}` }],
             PARSE_PROMPT,
-            4096
+            4096,
+            preferredProvider
         );
     } catch (err) {
         return NextResponse.json({ error: "Erreur IA : " + err.message }, { status: 500 });
