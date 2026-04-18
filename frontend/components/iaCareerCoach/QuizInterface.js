@@ -165,27 +165,27 @@ export default function QuizInterface({ session, onBack }) {
 
                 <div className="space-y-2">
                     {options.map((opt, i) => {
+                        // selected est l'index (integer) de l'option choisie
+                        const isSelected = selected === i;
+                        const isCorrect  = i === q.correct_answer;
+
                         let style = 'border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50';
-                        if (selected === opt) {
-                            if (feedback) {
-                                style = feedback.is_correct
-                                    ? 'border-emerald-400 bg-emerald-50'
-                                    : opt === selected
-                                        ? 'border-red-400 bg-red-50'
-                                        : 'border-slate-200 bg-white';
-                            } else {
-                                style = 'border-violet-500 bg-violet-50';
-                            }
+                        if (isSelected) {
+                            style = feedback
+                                ? feedback.is_correct
+                                    ? 'border-emerald-400 bg-emerald-50'   // bonne réponse choisie
+                                    : 'border-red-400 bg-red-50'           // mauvaise réponse choisie
+                                : 'border-violet-500 bg-violet-50';        // sélectionné, pas encore validé
                         }
-                        // Show correct answer after feedback
-                        if (feedback && !feedback.is_correct && opt === q.correct_answer) {
+                        // Mettre en vert la bonne réponse après un mauvais choix
+                        if (feedback && !feedback.is_correct && isCorrect) {
                             style = 'border-emerald-400 bg-emerald-50';
                         }
 
                         return (
                             <button
                                 key={i}
-                                onClick={() => !feedback && setSelected(opt)}
+                                onClick={() => !feedback && setSelected(i)}
                                 disabled={!!feedback}
                                 className={`w-full text-left px-4 py-3 rounded-xl border text-sm font-medium transition-all ${style} ${!feedback ? 'cursor-pointer' : 'cursor-default'}`}
                             >
