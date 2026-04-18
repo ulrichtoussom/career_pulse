@@ -7,9 +7,6 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Auth%20%2B%20DB-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com)
 
 CareerPulse is a full-stack AI-powered career platform built with Next.js and Supabase. It helps professionals create tailored CVs, prepare for job interviews, and get personalized career coaching — all in one place.
-
-> **Active development on branch [`session_messages`](https://github.com/ulrichtoussom/career_pulse/tree/session_messages).** Contributors welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md).
-
 ---
 
 ## Features
