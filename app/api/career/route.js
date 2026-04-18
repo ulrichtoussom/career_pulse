@@ -123,12 +123,12 @@ export async function POST(req) {
         return NextResponse.json(data);
 
     } catch (error) {
-        console.error("GLOBAL API ERROR:", error.message);
-        // return NextResponse.json({ error: error.message }, { status: 500 });
-        return new Response(JSON.stringify({ error: "Erreur lors de la génération" }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        // On renvoie le message réel pour pouvoir diagnostiquer en production
+        console.error("GLOBAL API ERROR:", error.message, error.status ?? '');
+        return NextResponse.json(
+            { error: error.message || "Erreur lors de la génération" },
+            { status: error.status ?? 500 }
+        );
     }
 }
 

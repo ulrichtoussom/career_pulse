@@ -24,7 +24,7 @@ export const adjustBrightness = (hex, amt) => {
     return `#${fill(r)}${fill(g)}${fill(b)}`;
 };
 
-export default function CareerModule() {
+export default function CareerModule({ selectedModel }) {
 
     // ── Resize panneau formulaire / aperçu ─────────────────────
     // On manipule le DOM directement via ref pour éviter tout problème
@@ -62,6 +62,7 @@ export default function CareerModule() {
     }, []);
 
     const [loading, setLoading] = useState(false);
+    const [generateError, setGenerateError] = useState('');
     const [result, setResult] = useState(null);
     const [activeTab, setActiveTab] = useState('cv');
     const [selectedTemplate, setSelectedTemplate] = useState('classicPro');
@@ -122,9 +123,17 @@ export default function CareerModule() {
     const generate = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setGenerateError('');
         try {
             const formData = new FormData(e.target);
+            // Transmettre le modèle IA sélectionné dans la sidebar
+            formData.append('preferred_model', selectedModel || 'auto');
+
             const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                setGenerateError("Session expirée. Veuillez vous reconnecter.");
+                return;
+            }
 
             const res = await fetch('/api/career', {
                 method: 'POST',
@@ -133,9 +142,14 @@ export default function CareerModule() {
             });
 
             if (!res.ok) {
-                const errorText = await res.text();
-                console.error("L'API a renvoyé une erreur :", errorText);
-                return
+                let message = `Erreur serveur (${res.status})`;
+                try {
+                    const json = await res.json();
+                    message = json.error || message;
+                } catch (_) {}
+                console.error("API career error:", res.status, message);
+                setGenerateError(message);
+                return;
             }
 
             const data = await res.json();
@@ -143,7 +157,7 @@ export default function CareerModule() {
                 const raw = data.structured_data;
                 const safeData = {
                     ...raw,
-                    id: data.id, // DB row id — required for saving modifications
+                    id: data.id,
                     letter: raw.letter || raw.cover_letter || "",
                     basics: raw.basics || {},
                     work: raw.work || [],
@@ -152,11 +166,13 @@ export default function CareerModule() {
                     analysis: raw.analysis || { strengths: [], gaps: [] }
                 };
                 setResult(safeData);
-                // On mobile, switch to preview after generation
                 setMobileView('preview');
+            } else {
+                setGenerateError("L'IA n'a pas retourné de données. Réessayez.");
             }
         } catch (error) {
             console.error("Erreur de génération:", error);
+            setGenerateError("Impossible de joindre le serveur. Vérifiez votre connexion.");
         } finally {
             setLoading(false);
         }
@@ -231,6 +247,20 @@ export default function CareerModule() {
                         />
                     </div>
                 </div>
+
+                {/* BANDEAU D'ERREUR de génération */}
+                {generateError && (
+                    <div className="hidden md:flex absolute bottom-4 left-4 right-4 z-20
+                        items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 shadow-md">
+                        <span className="text-red-500 text-lg shrink-0">⚠</span>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-red-700">Échec de la génération</p>
+                            <p className="text-xs text-red-600 mt-0.5 wrap-break-word">{generateError}</p>
+                        </div>
+                        <button onClick={() => setGenerateError('')}
+                            className="text-red-400 hover:text-red-600 shrink-0 text-lg leading-none">×</button>
+                    </div>
+                )}
 
                 {/* POIGNÉE resize — desktop uniquement */}
                 <div
